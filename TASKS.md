@@ -2,41 +2,50 @@
 
 ## Prerequisites Setup (Week 1)
 
+### 0. Project Setup and Guidelines
+- [x] Create global.instructions.md for development standards (July 9, 2025)
+- [x] Update project structure to use Supabase Dashboard and npm n8n (July 9, 2025)
+
+
 ### 1. Development Environment Setup
-- [ ] Install Node.js (v18+) and npm/yarn
-- [ ] Install Git and configure GitHub account
-- [ ] Install VS Code with recommended extensions
-- [ ] Install Docker Desktop for local n8n setup
+- [x] Install Node.js (v18+) and npm/yarn (Node.js v20.17.0, npm v11.4.2 detected)
+- [x] Install Git and configure GitHub account (git version 2.45.2.windows.1 detected)
+- [x] Install VS Code with recommended extensions (VS Code 1.101.2 detected)
+- [x] Install n8n globally via npm (n8n 1.97.1 detected)
 
 ### 2. Service Account Creation
 - [ ] Create Supabase account and new project
-- [ ] Create OpenAI account and get API keys
-- [ ] Create n8n Cloud account (or prepare local installation)
+- [ ] Create Gemini account and get API keys
+- [ ] Set up n8n locally via npm (no separate account needed)
 - [ ] Create Facebook Developer account
 - [ ] Create WhatsApp Business API account (if needed)
 
+
 ### 3. Initial Project Structure
+- [x] Create initial project structure (folders and .env.example created on July 9, 2025)
 ```
 chatbot-enterprise/
 ├── admin-dashboard/          # Next.js admin interface
 ├── chat-widget/             # Embeddable chat widget
-├── n8n-workflows/           # Exported n8n workflow files
-├── supabase/               # Database migrations and functions
-├── docs/                   # Documentation
-└── docker-compose.yml      # Local development setup
+├── n8n-workflows/           # Exported n8n workflow files (.json)
+├── docs/                    # Documentation
+├── tests/                   # Test files
+└── .env.example            # Environment variables template
 ```
+
+**Note**: Database schema and RLS policies are managed through Supabase web interface. n8n runs locally via npm.
 
 ## Phase 1: Foundation Setup (Week 1-2)
 
 ### Task 1.1: Supabase Project Setup
 **Priority: High | Estimated Time: 4 hours**
 
-- [ ] Create new Supabase project
-- [ ] Enable pgvector extension in SQL editor:
+- [ ] Create new Supabase project through web interface
+- [ ] Enable pgvector extension in SQL Editor (Dashboard → SQL Editor):
   ```sql
   CREATE EXTENSION IF NOT EXISTS vector;
   ```
-- [ ] Create initial database schema:
+- [ ] Create initial database schema using SQL Editor:
   ```sql
   -- User roles and permissions
   CREATE TABLE user_roles (
@@ -74,7 +83,7 @@ chatbot-enterprise/
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     document_id UUID REFERENCES documents(id) ON DELETE CASCADE,
     content TEXT NOT NULL,
-    embedding vector(1536), -- OpenAI embedding dimension
+    embedding vector(768), -- Gemini embedding-001 dimension
     chunk_index INTEGER,
     metadata JSONB DEFAULT '{}',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -84,56 +93,32 @@ chatbot-enterprise/
   CREATE INDEX ON document_chunks USING ivfflat (embedding vector_cosine_ops);
   ```
 
-- [ ] Configure Row Level Security (RLS) policies
-- [ ] Set up Supabase Storage buckets for file uploads
-- [ ] Configure CORS settings for web applications
+- [ ] Configure Row Level Security (RLS) policies through Authentication → Policies in Dashboard
+- [ ] Set up Supabase Storage buckets through Storage → Buckets in Dashboard
+- [ ] Configure CORS settings in API Settings
 
 ### Task 1.2: n8n Installation and Configuration
 **Priority: High | Estimated Time: 3 hours**
 
-**Option A: Local Installation (Recommended for development)**
-- [ ] Create docker-compose.yml for n8n:
-  ```yaml
-  version: '3.8'
-  services:
-    n8n:
-      image: n8nio/n8n:latest
-      ports:
-        - "5678:5678"
-      environment:
-        - N8N_HOST=localhost
-        - N8N_PORT=5678
-        - N8N_PROTOCOL=http
-        - NODE_ENV=development
-        - WEBHOOK_URL=http://localhost:5678/
-      volumes:
-        - n8n_data:/home/node/.n8n
-        - ./n8n-workflows:/home/node/.n8n/workflows
-      depends_on:
-        - n8n-db
-    
-    n8n-db:
-      image: postgres:13
-      environment:
-        - POSTGRES_DB=n8n
-        - POSTGRES_USER=n8n
-        - POSTGRES_PASSWORD=n8n_password
-      volumes:
-        - n8n_db_data:/var/lib/postgresql/data
-
-  volumes:
-    n8n_data:
-    n8n_db_data:
+**Local npm Installation (Recommended for development)**
+- [ ] Install n8n globally:
+  ```bash
+  npm install n8n -g
   ```
+- [ ] Start n8n locally:
+  ```bash
+  n8n start
+  ```
+- [ ] Access n8n at http://localhost:5678
+- [ ] Create initial user account through web interface
 
-**Option B: n8n Cloud**
-- [ ] Sign up for n8n Cloud account
-- [ ] Create workspace and configure API access
-
-**Both Options:**
-- [ ] Configure environment variables for OpenAI API
-- [ ] Configure Supabase connection credentials
+**Configuration:**
+- [ ] Configure environment variables for Gemini API in n8n settings
+- [ ] Configure Supabase connection credentials in n8n
+- [ ] Set up webhooks for workflow triggers
 - [ ] Test basic workflow creation and execution
+
+**Note**: For production, consider n8n Cloud or self-hosted Docker deployment
 
 ### Task 1.3: Next.js Admin Dashboard Setup
 **Priority: Medium | Estimated Time: 4 hours**
@@ -222,7 +207,7 @@ chatbot-enterprise/
      - DOCX: Binary to text conversion
      - TXT: Direct text processing
   4. **Text Chunking**: Split content into manageable chunks
-  5. **OpenAI Embeddings**: Generate vector embeddings
+  5. **Gemini Embeddings**: Generate vector embeddings
   6. **Supabase Insert**: Store chunks and embeddings in database
   7. **Status Update**: Mark document as processed
 
@@ -239,7 +224,7 @@ chatbot-enterprise/
   3. **HTML Extract**: Extract text content from HTML
   4. **Content Cleaning**: Remove navigation, ads, etc.
   5. **Text Chunking**: Split content appropriately
-  6. **OpenAI Embeddings**: Generate embeddings
+  6. **Gemini Embeddings**: Generate embeddings
   7. **Supabase Insert**: Store processed content
 
 - [ ] Handle different website structures
@@ -251,11 +236,11 @@ chatbot-enterprise/
 
 - [ ] Create "RAG Query" workflow:
   1. **Webhook Trigger**: Receive chat message
-  2. **OpenAI Embeddings**: Generate query embedding
+  2. **Gemini Embeddings**: Generate query embedding
   3. **Supabase Query**: Vector similarity search
   4. **Context Assembly**: Combine relevant chunks
   5. **Prompt Construction**: Build LLM prompt with context
-  6. **OpenAI Chat**: Generate response
+  6. **Gemini Chat**: Generate response
   7. **Response Formatting**: Clean and format output
   8. **Webhook Response**: Return formatted response
 
@@ -394,9 +379,9 @@ chatbot-enterprise/
 ## Daily Development Tasks
 
 ### Week 1 Daily Breakdown:
-**Monday**: Development environment setup, Supabase project creation
-**Tuesday**: Database schema creation, RLS policies
-**Wednesday**: n8n installation and basic configuration
+**Monday**: Development environment setup, Node.js and npm n8n installation
+**Tuesday**: Supabase project creation via Dashboard, database schema via SQL Editor
+**Wednesday**: RLS policies setup via Dashboard, n8n local setup and basic workflows
 **Thursday**: Next.js admin dashboard initialization
 **Friday**: Authentication system implementation
 
@@ -443,12 +428,13 @@ chatbot-enterprise/
 
 ### Documentation and Learning:
 - Supabase Documentation: https://supabase.com/docs
+- Gemini API Documentation: https://ai.google.dev/docs
 - n8n Documentation: https://docs.n8n.io/
 - Next.js Documentation: https://nextjs.org/docs
-- OpenAI API Documentation: https://platform.openai.com/docs
+- Gemini API Documentation: https://ai.google.dev/docs
 
 ### API Keys and Secrets:
-- OpenAI API key (GPT-4 and Embeddings access)
+- Gemini API key (gemini-1.5-pro and embedding-001 access)
 - Supabase project URL and anon key
 - n8n webhook URLs
 - Facebook Graph API credentials (for later phases)

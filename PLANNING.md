@@ -20,7 +20,7 @@ Comprehensive enterprise chatbot system with RAG (Retrieval Augmented Generation
 - **Frontend**: Next.js 14 with App Router
 - **Authentication**: Supabase Auth
 - **Vector Database**: Supabase pgvector
-- **AI/LLM**: OpenAI GPT-4 + Embeddings API
+- **AI/LLM**: Gemini 1.5 Pro + Embedding-001 API
 - **File Processing**: n8n workflows with file processing nodes
 
 #### Supporting Technologies
@@ -43,7 +43,7 @@ user_roles (id, name, permissions, created_at)
 -- Knowledge Base
 knowledge_bases (id, name, description, owner_id, created_at)
 documents (id, kb_id, title, content, file_path, status, metadata)
-document_chunks (id, document_id, content, embedding, metadata)
+document_chunks (id, document_id, content, embedding vector(768), metadata)
 
 -- Chatbots
 chatbots (id, name, description, kb_ids[], n8n_workflow_id, config, created_at)
@@ -62,23 +62,23 @@ comment_monitoring (id, page_id, comment_id, sentiment, status, handled_by)
    - File upload trigger
    - Content extraction (PDF, DOCX, etc.)
    - Text chunking
-   - OpenAI embedding generation
+   - Gemini embedding generation
    - Supabase vector storage
 
 2. **Web Scraping Workflow**
    - URL input trigger
    - Web content extraction
    - Content cleaning
-   - Embedding generation
+   - Embedding generation (Gemini)
    - Vector storage
 
 3. **RAG Query Workflow**
    - Chat message trigger
-   - Query embedding generation
+   - Query embedding generation (Gemini)
    - Vector similarity search
    - Context retrieval
    - LLM prompt construction
-   - OpenAI API call
+   - Gemini API call
    - Response formatting
 
 4. **Facebook Integration Workflow**
@@ -123,7 +123,7 @@ comment_monitoring (id, page_id, comment_id, sentiment, status, handled_by)
 #### Components:
 - **Document Processing**: n8n workflow handles file upload → embedding → storage
 - **Vector Search**: n8n workflow performs similarity search in Supabase
-- **LLM Integration**: n8n OpenAI nodes for chat completion
+- **LLM Integration**: n8n Gemini nodes for chat completion
 - **Context Management**: n8n manages conversation context and memory
 
 ### 3. Chat Interface (Next.js Widget)
@@ -157,7 +157,7 @@ comment_monitoring (id, page_id, comment_id, sentiment, status, handled_by)
 - Document processing n8n workflows
 - Vector storage and retrieval workflows
 - Basic chatbot functionality
-- OpenAI integration
+- Gemini integration
 
 ### Phase 3: Admin Interface (Weeks 5-6)
 - Knowledge base management UI
@@ -204,13 +204,13 @@ comment_monitoring (id, page_id, comment_id, sentiment, status, handled_by)
 ### Technical Risks:
 - **n8n Performance**: Monitor workflow execution times, optimize heavy processes
 - **Vector Search Accuracy**: Fine-tune embedding models and similarity thresholds
-- **Rate Limiting**: Implement proper rate limiting for OpenAI API calls
+- **Rate Limiting**: Implement proper rate limiting for Gemini API calls
 - **Scalability**: Plan for horizontal scaling of n8n workflows
 
 ### Business Risks:
 - **API Dependency**: Have fallback mechanisms for third-party API failures
 - **Data Privacy**: Implement proper data encryption and access controls
-- **Cost Management**: Monitor OpenAI API usage and implement cost controls
+- **Cost Management**: Monitor Gemini API usage and implement cost controls
 
 ## Success Metrics
 
@@ -230,14 +230,14 @@ comment_monitoring (id, page_id, comment_id, sentiment, status, handled_by)
 
 ### Required Services:
 1. **Supabase Project**: Free tier initially, upgrade as needed
-2. **n8n Instance**: Self-hosted or n8n Cloud
-3. **OpenAI API Account**: GPT-4 and Embeddings access
+2. **n8n Instance**: Local npm installation (recommended for development)
+3. **Gemini API Account**: gemini-1.5-pro and embedding-001 access
 4. **Development Tools**: Node.js, Git, VS Code
 5. **Social Media Developer Accounts**: Facebook, WhatsApp Business
 
 ### Local Development:
-- Docker setup for n8n
-- Supabase CLI for local development
+- npm installation for n8n (`npm install n8n -g` then `n8n start`)
+- Supabase web interface for database management
 - Next.js development environment
 - Environment variable management
 
