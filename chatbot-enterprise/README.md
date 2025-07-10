@@ -86,6 +86,16 @@ chatbot-enterprise/
 └── .env.example            # Environment variables template
 ```
 
+## 🔄 n8n Workflows
+
+The system follows an n8n-first approach with these core workflows:
+
+1. **Document Processing**: File upload → embedding → storage
+2. **Web Scraping**: URL → content extraction → embedding
+3. **RAG Query**: Query → vector search → LLM response
+4. **Facebook Integration**: Social media automation
+5. **Human Handoff**: Escalation to support agents
+
 ## 🧪 Testing
 
 ### Database Tests
@@ -131,41 +141,72 @@ The system includes three specialized functions for RAG functionality:
 
 All functions respect RLS policies and support knowledge base filtering.
 
-## 🔄 n8n Workflows
+## Admin Dashboard
 
-The system follows an n8n-first approach with these core workflows:
+### Features
+- **Authentication**: Supabase Auth with email/password
+- **Role-Based Access Control (RBAC)**: User role management
+- **Protected Routes**: Dashboard routes protected via middleware
+- **Modern UI**: Built with shadcn/ui components using slate theme
+- **Fully Typed**: TypeScript for improved developer experience
 
-1. **Document Processing**: File upload → embedding → storage
-2. **Web Scraping**: URL → content extraction → embedding
-3. **RAG Query**: Query → vector search → LLM response
-4. **Facebook Integration**: Social media automation
-5. **Human Handoff**: Escalation to support agents
+### Environment Variables
+Create a `.env.local` file with the following variables:
+```bash
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+```
 
-## 📚 Documentation
+### Getting Started
 
-- [Planning Document](PLANNING.md) - Complete system architecture
-- [Task List](TASKS.md) - Development roadmap
-- [Module Specifications](Chatbot/Chatbot_DoanhNghiep.md) - Detailed requirements
+1. **Navigate to the admin-dashboard directory**
+   ```bash
+   cd chatbot-enterprise/admin-dashboard
+   ```
 
-## 🚦 Development Status
+2. **Install dependencies**
+   ```bash
+   npm install
+   # or
+   yarn install
+   ```
 
-### ✅ Completed (Phase 1)
-- [x] Supabase project setup with pgvector
-- [x] Database schema creation
-- [x] Row Level Security configuration
-- [x] Vector search functionality
-- [x] Unit tests for database operations
+3. **Run the development server**
+   ```bash
+   npm run dev
+   # or
+   yarn dev
+   ```
 
-### 🔄 In Progress
-- [ ] n8n workflow development
-- [ ] Next.js admin dashboard
-- [ ] Authentication system
+4. **Open [http://localhost:3000](http://localhost:3000)** with your browser.
 
-### 📋 Next Steps
-1. Complete n8n installation and configuration
-2. Build document processing workflow
-3. Create admin dashboard interface
-4. Implement authentication system
+### Project Structure
+```
+admin-dashboard/
+├── app/                     # Next.js App Router
+│   ├── auth/                # Auth callback routes
+│   ├── dashboard/           # Protected dashboard routes
+│   ├── login/               # Login page
+│   ├── register/            # Registration page
+│   ├── forgot-password/     # Password recovery
+│   └── reset-password/      # Password reset
+├── components/              # UI components
+├── lib/                     # Utility functions
+│   ├── supabase/            # Supabase clients and auth context
+│   └── utils/               # Helper functions
+└── public/                  # Static assets
+```
+
+### Tech Stack
+- **Framework**: Next.js 15.3.5 (App Router)
+- **Authentication**: Supabase Auth
+- **Database**: Supabase PostgreSQL
+- **Styling**: Tailwind CSS v4
+- **Components**: shadcn/ui (slate theme)
+- **Form Handling**: react-hook-form with Zod validation
+- **State Management**: React Context API
+- **Notifications**: sonner toast
 
 ## 🤝 Contributing
 

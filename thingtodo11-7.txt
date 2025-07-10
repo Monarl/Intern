@@ -1,0 +1,3 @@
+merge readme and task_update 
+use supabase mcp to make it read the policy and schema and update base on the current project implementation
+fix auth error in website.
