@@ -145,7 +145,7 @@ chatbot-enterprise/
 
 - [ ] Install required dependencies:
   ```bash
-  npm install @supabase/auth-helpers-nextjs @supabase/supabase-js
+  npm install @supabase/ssr @supabase/supabase-js
   npm install @headlessui/react @heroicons/react
   npm install react-hook-form zod @hookform/resolvers
   npm install recharts lucide-react
@@ -154,12 +154,33 @@ chatbot-enterprise/
 - [ ] Configure Supabase client:
   ```typescript
   // lib/supabase.ts
-  import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-  import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
   import { cookies } from 'next/headers'
+  import {
+    createBrowserClient,
+    createServerClient,
+    type CookieOptions,
+  } from '@supabase/ssr'
 
-  export const createClient = () => createClientComponentClient()
-  export const createServerClient = () => createServerComponentClient({ cookies })
+  const supabaseUrl  = process.env.NEXT_PUBLIC_SUPABASE_URL!
+  const supabaseKey  = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+
+  /* ---------- Server Client: use only in Server Components / Route Handlers ---------- */
+  export const supabaseServer = () => {
+    const cookieStore = cookies()          // App-Router <15: sync; 15+: still sync
+    return createServerClient(supabaseUrl, supabaseKey, {
+      cookies: {
+        get:    (name: string)               => cookieStore.get(name)?.value,
+        set:    (name, value, options: CookieOptions) =>
+                cookieStore.set({ name, value, ...options }),
+        remove: (name,      options: CookieOptions) =>
+                cookieStore.set({ name, value: '', ...options }),
+      },
+    })
+  }
+
+  /* ---------- Browser Client: use in Client Components ---------- */
+  export const supabaseBrowser = () =>
+    createBrowserClient(supabaseUrl, supabaseKey)
   ```
 
 - [ ] Set up authentication pages (login, register, forgot password)
@@ -178,30 +199,60 @@ chatbot-enterprise/
   ```typescript
   // context/AuthContext.tsx
   'use client'
-  import { createContext, useContext, useEffect, useState } from 'react'
-  import { createClient } from '@/lib/supabase'
-  import type { User } from '@supabase/auth-helpers-nextjs'
 
-  interface AuthContextType {
+  import {
+    createContext, useContext, useEffect, useState, ReactNode,
+  } from 'react'
+  import { supabaseBrowser } from '@/lib/supabase'
+  import type { User } from '@supabase/supabase-js'
+
+  interface AuthCtx {
     user: User | null
     loading: boolean
-    signIn: (email: string, password: string) => Promise<void>
-    signUp: (email: string, password: string) => Promise<void>
+    signIn:  (email: string, password: string) => Promise<void>
+    signUp:  (email: string, password: string) => Promise<void>
     signOut: () => Promise<void>
   }
 
-  const AuthContext = createContext<AuthContextType | undefined>(undefined)
+  const AuthContext = createContext<AuthCtx | undefined>(undefined)
 
-  export function AuthProvider({ children }: { children: React.ReactNode }) {
-    // Implementation
+  export function AuthProvider({ children }: { children: ReactNode }) {
+    const supabase = supabaseBrowser()
+    const [user, setUser]       = useState<User | null>(null)
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+      supabase.auth.getUser().then(({ data }) => {
+        setUser(data.user ?? null)
+        setLoading(false)
+      })
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange((_, session) =>
+        setUser(session?.user ?? null),
+      )
+      return () => subscription.unsubscribe()
+    }, [supabase])
+
+    const value: AuthCtx = {
+      user,
+      loading,
+      signIn:  (e, p) => supabase.auth.signInWithPassword({ email: e, password: p }).then(() => {}),
+      signUp:  (e, p) => supabase.auth.signUp           ({ email: e, password: p }).then(() => {}),
+      signOut: ()     => supabase.auth.signOut().then(() => setUser(null)),
+    }
+
+    return (
+      <AuthContext.Provider value={value}>
+        {children}
+      </AuthContext.Provider>
+    )
   }
 
   export const useAuth = () => {
-    const context = useContext(AuthContext)
-    if (context === undefined) {
-      throw new Error('useAuth must be used within an AuthProvider')
-    }
-    return context
+    const ctx = useContext(AuthContext)
+    if (!ctx) throw new Error('useAuth must be within <AuthProvider>')
+    return ctx
   }
   ```
 

@@ -17,7 +17,7 @@ Comprehensive enterprise chatbot system with RAG (Retrieval Augmented Generation
 #### Primary Stack
 - **Database & Backend**: Supabase (PostgreSQL with pgvector extension)
 - **Workflow Automation**: n8n (self-hosted or cloud)
-- **Frontend**: Next.js 14 with App Router
+- **Frontend**: Next.js 15 with App Router
 - **Authentication**: Supabase Auth
 - **Vector Database**: Supabase pgvector
 - **AI/LLM**: Gemini 1.5 Pro + Embedding-001 API
