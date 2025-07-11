@@ -4,7 +4,7 @@ import { createBrowserClient } from '@supabase/ssr'
 import { User } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
 import { createContext, useContext, useEffect, useState } from 'react'
-import { getUserRole } from './user-roles'
+import { getUserRole } from '@/app/lib/supabase/user-roles'
 
 // Define the type for UserRole from your Supabase database
 type UserRole = 'Super Admin' | 'Knowledge Manager' | 'Chatbot Manager' | 'Analyst/Reporter' | 'Support Agent' | null

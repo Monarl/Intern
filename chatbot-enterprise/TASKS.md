@@ -54,6 +54,14 @@ chatbot-enterprise/
     permissions JSONB NOT NULL DEFAULT '{}',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
   );
+  
+  -- User role mappings
+  CREATE TABLE user_role_mappings (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
+    role_id UUID NOT NULL REFERENCES public.user_roles(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+  );
 
   -- Knowledge bases
   CREATE TABLE knowledge_bases (

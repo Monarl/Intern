@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSupabase } from '@/lib/supabase/context';
-import { getAllRoles, assignRoleToUser } from '@/lib/supabase/user-roles';
+import { getAllRoles, assignRoleToUser } from '@/app/lib/supabase/user-roles';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
