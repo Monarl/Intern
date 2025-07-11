@@ -1,38 +1,9 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+// This file is deprecated - imports should be updated to use '@/app/lib/supabase' instead
+// This is a compatibility layer that re-exports from the new location
 
+import { createClient as appCreateClient } from '@/app/lib/supabase/server'
+
+// Re-export the createClient function from the new location
 export async function createClient() {
-  const cookieStore = await cookies()
-  
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          try {
-            cookieStore.set({
-              name,
-              value,
-              ...options,
-            })
-          } catch (error) {
-            // We can't set cookies in middleware in dev mode
-            console.error('Error setting cookie:', error)
-          }
-        },
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        remove(name: string, options: CookieOptions) {
-          try {
-            cookieStore.delete(name)
-          } catch (error) {
-            console.error('Error deleting cookie:', error)
-          }
-        },
-      },
-    }
-  )
+  return await appCreateClient()
 }

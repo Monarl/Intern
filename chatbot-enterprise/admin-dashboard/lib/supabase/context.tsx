@@ -4,6 +4,7 @@ import { createBrowserClient } from '@supabase/ssr'
 import { User } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
 import { createContext, useContext, useEffect, useState } from 'react'
+import { getUserRole } from './user-roles'
 
 // Define the type for UserRole from your Supabase database
 type UserRole = 'Super Admin' | 'Knowledge Manager' | 'Chatbot Manager' | 'Analyst/Reporter' | 'Support Agent' | null
@@ -38,20 +39,13 @@ export function SupabaseProvider({
   )
 
   useEffect(() => {
-    // Function to fetch the user's role
+    // Function to fetch the user's role using the utility function
     const fetchUserRole = async (userId: string) => {
       try {
-        const { data, error } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', userId)
-          .single()
-
-        if (error) throw error
-        return (data?.role as UserRole) || null
+        return await getUserRole(userId);
       } catch (error) {
         console.error('Error fetching user role:', error)
-        return null
+        return null;
       }
     }
     
@@ -59,7 +53,19 @@ export function SupabaseProvider({
       setIsLoading(true)
       try {
         const { data: { user }, error } = await supabase.auth.getUser()
-        if (error) throw error
+        if (error) {
+            if (error.message === 'Auth session missing!') {
+                console.log("No active session, redirecting to login");
+                // If this is a protected route, you might want to redirect
+                // router.push('/login');
+            } else {
+                // Handle other types of errors
+                console.error('Authentication error:', error.message);
+            }
+            setUser(null);
+            setUserRole(null);
+            return;
+            }
         setUser(user)
         if (user) {
           const role = await fetchUserRole(user.id)

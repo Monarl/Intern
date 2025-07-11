@@ -1,5 +1,6 @@
 import { Metadata } from 'next'
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@/app/lib/supabase/server'
+import UserRoleInfo from '@/components/UserRoleInfo'
 
 export const metadata: Metadata = {
   title: 'Dashboard | Chatbot Enterprise',
@@ -36,6 +37,11 @@ export default async function DashboardPage() {
         </p>
       </div>
 
+      {/* User Role Info */}
+      <div className="mb-8">
+        <UserRoleInfo />
+      </div>
+        
       {/* Stats cards */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {stats.map((stat) => (

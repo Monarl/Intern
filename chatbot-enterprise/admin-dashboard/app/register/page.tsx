@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@supabase/ssr'
+import { assignRoleToUser } from '@/lib/supabase/user-roles'
 import Link from 'next/link'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
@@ -53,7 +54,9 @@ export default function RegisterPage() {
   const onSubmit = async (values: FormValues) => {
     try {
       setLoading(true)
-      const { error } = await supabase.auth.signUp({
+      
+      // First, sign up the user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
         options: {
@@ -61,9 +64,18 @@ export default function RegisterPage() {
         },
       })
 
-      if (error) {
-        toast.error(error.message)
+      if (authError) {
+        toast.error(authError.message)
         return
+      }
+      
+      if (authData.user) {
+        // Assign "Support Agent" role to the new user (lowest privilege by default)
+        const { success, error: roleError } = await assignRoleToUser(authData.user.id, 'Support Agent')
+        
+        if (!success) {
+          console.error('Error assigning role to user:', roleError)
+        }
       }
 
       toast.success('Registration successful! Please check your email to confirm your account')

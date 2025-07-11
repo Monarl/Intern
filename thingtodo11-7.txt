@@ -1,3 +1,4 @@
-merge readme and task_update 
+
 use supabase mcp to make it read the policy and schema and update base on the current project implementation
+replace all current RLS to use the user mapping instead of meta
 fix auth error in website.
