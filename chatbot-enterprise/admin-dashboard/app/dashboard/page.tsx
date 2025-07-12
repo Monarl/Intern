@@ -18,7 +18,7 @@ export default async function DashboardPage() {
   ] = await Promise.all([
     supabase.from('knowledge_bases').select('*', { count: 'exact', head: true }),
     supabase.from('documents').select('*', { count: 'exact', head: true }),
-    supabase.from('user_roles').select('*', { count: 'exact', head: true }),
+    supabase.from('user_role_mappings').select('*', { count: 'exact', head: true }),
   ])
 
   // Format stats for display

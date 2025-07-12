@@ -62,7 +62,7 @@ export default function LoginPage() {
 
       toast.success('Logged in successfully')
       router.push(decodeURIComponent(redirectUrl))
-      router.refresh()
+      // router.refresh()
     } catch (error) {
       toast.error('An error occurred during login')
       console.error(error)
