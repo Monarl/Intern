@@ -99,6 +99,18 @@ chatbot-enterprise/
 
   -- Create vector similarity search index
   CREATE INDEX ON document_chunks USING ivfflat (embedding vector_cosine_ops);
+
+  CREATE TABLE document_rows (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    dataset_id UUID REFERENCES documents(id) ON DELETE CASCADE,
+    row_data JSONB
+  );
+
+  CREATE TABLE n8n_chat_histories (
+    id SERIAL PRIMARY KEY,
+    session_id CHARACTER VARYING(255) NOT NULL,
+    message JSONB NOT NULL
+  );
   ```
 
 - [x] Configure Row Level Security (RLS) policies through Authentication → Policies in Dashboard
@@ -273,7 +285,7 @@ chatbot-enterprise/
 ### Task 2.1: Document Processing n8n Workflow
 **Priority: High | Estimated Time: 6 hours**
 
-- [ ] Create "Document Processing" workflow in n8n:
+- [x] Create "Document Processing" workflow in n8n:
   1. **Webhook Trigger**: Receive file upload notifications
   2. **File Download**: Get file from Supabase Storage
   3. **Content Extraction**: Use appropriate node based on file type
@@ -286,13 +298,13 @@ chatbot-enterprise/
   7. **Status Update**: Mark document as processed
 
 - [ ] Configure error handling and retry logic
-- [ ] Set up webhook endpoints for triggering
-- [ ] Test with various file formats
+- [x] Set up webhook endpoints for triggering
+- [x] Test with various file formats
 
 ### Task 2.2: Web Scraping Workflow
 **Priority: Medium | Estimated Time: 4 hours**
 
-- [ ] Create "Web Scraping" workflow:
+- [x] Create "Web Scraping" workflow:
   1. **Webhook Trigger**: Receive URL input
   2. **HTTP Request**: Fetch web page content
   3. **HTML Extract**: Extract text content from HTML
@@ -301,7 +313,7 @@ chatbot-enterprise/
   6. **Gemini Embeddings**: Generate embeddings
   7. **Supabase Insert**: Store processed content
 
-- [ ] Handle different website structures
+- [x] Handle different website structures
 - [ ] Implement sitemap processing option
 - [ ] Add URL validation and security checks
 

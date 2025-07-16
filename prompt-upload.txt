@@ -1,0 +1,34 @@
+### Goal
+- Implement **TASK 2.4** so Super Admins & Knowledge Managers can upload / delete files or URLs and create / delete Knowledge Bases (KBs).
+
+### Functional Requirements
+- Roles: Super Admin, Knowledge Manager only (gate UI).
+- Accept multiple *.pdf, .docx, .xlsx, .csv* files (max 20 MB each).
+- User chooses an existing KB from dropdown or clicks “New KB”.
+- Store each file in the **chatbot-documents** supabase bucket at path: `<kb_name>/<filename>` (read admin-dashboard/example/upload-files.ts).
+- After file upload, trigger n8n webhook `POST /webhook/upload-doc` with body {path, file_name, knowledge_base_id} (read admin-dashboard/example/upload-files.ts).
+- API should be implemented in admin-dashboard/app/api
+- Show per-file/URL/sitemap progress, disable UI during upload, toast on finish.
+- Upload URL is the same with file but there is no storing in supabase storage, the path for n8n webhook is null and there is a checkbox (sitemap-enabled: yes) if the user want to send sitemap url instead.
+- When the user input the URL or sitemap, validate if it is a URL/sitemap first and reject & toast error the user if it is not a URL/sitemap.
+- After URL upload, trigger n8n `POST /webhook/upload-url` with body  
+  `{ path: "", file_name: url, knowledge_base_id, is_sitemap }`.
+- Delete file → remove storage object `chatbot-documents/<kb_name>/<filename>` **and** its `documents` record.
+- Delete KB → delete storage prefix `chatbot-documents/<kb_name>/` and its row in `knowledge_bases` (cascade deletes related `documents` / `document_rows`).
+- Delete URL → delete its `documents` row (no storage deletion).
+
+### Implementation Hints
+- Brave: use Brave MCP for *storage upload in supabase* docs.
+- Supabase: Use supabase mcp for interacting with the project as well as reading the schema.
+- n8n: use n8n MCP to see the workflow “Knowledge Base” implementation.
+- Example: study `admin-dashboard/example/upload-files.ts` to see my desired process.
+
+### Testing / Acceptance
+1. Upload 2 sample PDFs → objects appear in `storage.objects`.
+2. Corresponding rows created in `documents` / `document_rows`. Corresponding KB appeared if New KB
+3. n8n execution succeeds (status *completed*).
+4. README.md & TASKS.md updated with setup + usage notes.
+5. Upload a valid URL → row in `documents`; no storage object created.
+6. Upload a sitemap URL (`is_sitemap=true`) → row in `documents`.
+7. Delete a file → object removed from storage and corresponding `documents` row gone.
+8. Delete a KB → storage prefix `<kb_name>/` and KB row both gone; cascading deletes remove its `documents` / `document_rows`.
