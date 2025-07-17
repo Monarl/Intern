@@ -1,15 +1,20 @@
 import { NextResponse } from 'next/server';
-import { createClient, createAdminClient } from '@/app/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server-app';
+import { createAdminClient } from '@/app/lib/supabase/server';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    // Get the cookie header from the request
+    const cookieHeader = request.headers.get('cookie');
+    console.log('Cookie header present:', !!cookieHeader);
+    
     // User validation and authentication check
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
     if (authError) {
       console.error('Auth error in knowledge-base list API:', authError);
-      return NextResponse.json({ error: 'Authentication error' }, { status: 401 });
+      return NextResponse.json({ error: 'Authentication error: ' + authError.message }, { status: 401 });
     }
     
     if (!user) {
@@ -46,7 +51,7 @@ export async function GET() {
     }
 
     // Get all knowledge bases
-    const { data: knowledgeBases, error: kbError } = await supabase
+    const { data: knowledgeBases, error: kbError } = await adminSupabase
       .from('knowledge_bases')
       .select('*, documents(count)')
       .order('created_at', { ascending: false });

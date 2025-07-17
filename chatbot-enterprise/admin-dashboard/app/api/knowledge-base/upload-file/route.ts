@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server-app';
 import { createAdminClient } from '@/app/lib/supabase/server';
 import { getUserRole } from '@/app/lib/supabase/user-roles';
 
@@ -19,14 +20,20 @@ export async function POST(request: NextRequest) {
     const knowledgeBaseId = formData.get('knowledgeBaseId') as string;
     
     // User validation and authentication check
-    const supabase = await createAdminClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError) {
+      console.error('Auth error:', authError);
+      return NextResponse.json({ error: 'Authentication error' }, { status: 401 });
+    }
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Role-based access control
+    // Role-based access control using admin client for role lookup
+    const adminSupabase = await createAdminClient();
     const userRole = await getUserRole(user.id);
     if (userRole !== 'Super Admin' && userRole !== 'Knowledge Manager') {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
@@ -49,7 +56,7 @@ export async function POST(request: NextRequest) {
     let kb;
     if (knowledgeBaseId) {
       // Use existing KB
-      const { data, error: kbError } = await supabase
+      const { data, error: kbError } = await adminSupabase
         .from('knowledge_bases')
         .select('*')
         .eq('id', knowledgeBaseId)
@@ -65,7 +72,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Knowledge base name is required' }, { status: 400 });
       }
 
-      const { data, error: kbError } = await supabase
+      const { data, error: kbError } = await adminSupabase
         .from('knowledge_bases')
         .upsert(
           { 
@@ -89,7 +96,7 @@ export async function POST(request: NextRequest) {
 
     // File upload
     const desiredPath = `${kb.name}/${file.name}`;
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    const { data: uploadData, error: uploadError } = await adminSupabase.storage
       .from('chatbot-documents')
       .upload(desiredPath, file);
 
@@ -102,7 +109,7 @@ export async function POST(request: NextRequest) {
     const actualFilename = actualPath.split('/').pop() || file.name;
 
     // Create document record
-    const { data: documentData, error: documentError } = await supabase
+    const { data: documentData, error: documentError } = await adminSupabase
       .from('documents')
       .insert({
         knowledge_base_id: kb.id,
@@ -115,7 +122,7 @@ export async function POST(request: NextRequest) {
 
     if (documentError) {
       // Attempt to delete the uploaded file if document record creation fails
-      await supabase.storage
+      await adminSupabase.storage
         .from('chatbot-documents')
         .remove([actualPath]);
         

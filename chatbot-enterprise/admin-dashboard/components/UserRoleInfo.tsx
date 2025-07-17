@@ -39,6 +39,9 @@ export default function UserRoleInfo() {
     };
 
     loadRoles();
+    // We intentionally exclude userRole from dependencies as we only want to load roles 
+    // when the user object changes, not when their role changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const handleRoleChange = async (newRole: UserRole) => {

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server-app';
 import { createAdminClient } from '@/app/lib/supabase/server';
 import { getUserRole } from '@/app/lib/supabase/user-roles';
 
@@ -15,21 +16,27 @@ export async function POST(request: NextRequest) {
     }
 
     // User validation and authentication check
-    const supabase = await createAdminClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError) {
+      console.error('Auth error:', authError);
+      return NextResponse.json({ error: 'Authentication error' }, { status: 401 });
+    }
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Role-based access control
+    // Role-based access control using admin client for role lookup
+    const adminSupabase = await createAdminClient();
     const userRole = await getUserRole(user.id);
     if (userRole !== 'Super Admin' && userRole !== 'Knowledge Manager') {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
-    // Create knowledge base
-    const { data, error } = await supabase
+    // Create knowledge base using admin client
+    const { data, error } = await adminSupabase
       .from('knowledge_bases')
       .insert({
         name: name.trim(),
