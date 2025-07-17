@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, use } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, Trash2, FileText, Globe, ShieldAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -30,11 +30,11 @@ interface ApiError {
   message?: string
 }
 
-export default function DocumentsPage({ params }: { params: { id: string } }) {
+export default function DocumentsPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
   const { userRole, isLoading: userLoading } = useSupabase()
-  // In client components, params is already resolved
-  const id = params.id
+  // Unwrap params using React.use()
+  const { id } = use(params)
   const [loading, setLoading] = useState(true)
   const [knowledgeBase, setKnowledgeBase] = useState<KnowledgeBase | null>(null)
   const [documents, setDocuments] = useState<Document[]>([])

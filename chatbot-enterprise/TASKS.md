@@ -123,10 +123,6 @@ chatbot-enterprise/
 - RLS enabled on all public tables for security
 - **RLS Policies**: Comprehensive policies created for all 5 user roles with proper permissions
 - **User Roles**: All 5 roles implemented (Super Admin, Knowledge Manager, Chatbot Manager, Analyst/Reporter, Support Agent)
-- **Vector Search Functions**: 3 functions created for RAG functionality:
-  - `match_document_chunks()`: Pure vector similarity search
-  - `hybrid_search_chunks()`: Combined vector + text search
-  - `get_chunk_context()`: Retrieve surrounding chunks for context
 - Vector similarity search index created for document_chunks table
 - Foreign key constraints and CASCADE deletes working correctly
 - Unit tests created and passed in `tests/database/test_supabase_setup.sql`
@@ -388,13 +384,6 @@ chatbot-enterprise/
 - [x] Added status checks to prevent deletion of knowledge bases with processing documents
 - [x] Updated API endpoints to return 409 Conflict with descriptive error messages
 - [x] Updated frontend error handling to display specific error messages to users
-
-**Implementation Notes:**
-- Knowledge base deletion blocked if any document has status='processing'
-- Document deletion blocked if status='processing'
-- Returns HTTP 409 (Conflict) with descriptive error messages
-- Frontend displays specific error messages via toast notifications
-- Prevents orphaned document_chunks from race conditions during n8n processing
 
 ## Phase 3: Basic Chatbot Interface (Week 5-6)
 

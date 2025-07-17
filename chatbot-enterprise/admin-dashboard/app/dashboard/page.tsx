@@ -1,5 +1,5 @@
 import { Metadata } from 'next'
-import { createClient } from '@/app/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server-app'
 import UserRoleInfo from '@/components/UserRoleInfo'
 
 export const metadata: Metadata = {
