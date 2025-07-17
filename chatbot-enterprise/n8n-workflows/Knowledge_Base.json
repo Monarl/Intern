@@ -1,0 +1,1999 @@
+{
+  "name": "Knowledge Base",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "2a0f8524-88f3-4402-9010-e7eb4091ff2b",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -100,
+        60
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "0353efd3-64b3-421d-873c-4a29ecde3518",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1840,
+        500
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "db7e50ff-f963-4682-a8d7-d00fff3bd052",
+      "name": "Postgres Chat Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1,
+      "position": [
+        -700,
+        320
+      ],
+      "notesInFlow": false,
+      "credentials": {
+        "postgres": {
+          "id": "5LPqoPG4p0V8EFcd",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "3ec7ee39-38e8-43b7-b9d5-dba8ade06bb9",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1140,
+        20
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "ec8f4116-b80f-4267-9140-8e72017cdbe0",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -280,
+        100
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "832f1312-17e8-4b09-8577-530b61f2bb79",
+      "name": "Edit Fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -940,
+        100
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "295099db-0fa0-4bfa-89d4-c16d9a19b5f4",
+      "name": "When chat message received",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1100,
+        100
+      ],
+      "webhookId": "e104e40e-6134-4825-a6f0-8a646d882662"
+    },
+    {
+      "parameters": {},
+      "id": "ed0b1cd1-33f4-4667-a030-dc53b04a6582",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1100,
+        300
+      ],
+      "webhookId": "bf4dd093-bb02-472c-9454-7ab9af97bd1d"
+    },
+    {
+      "parameters": {},
+      "id": "f546ae46-290f-4ded-a965-4cb02620d617",
+      "name": "RAG AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.6,
+      "position": [
+        -620,
+        100
+      ]
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.5,
+      "position": [
+        -560,
+        320
+      ],
+      "id": "ca146add-a9cd-4ff6-9369-ddfd4a8dc2ff",
+      "name": "List Documents",
+      "credentials": {
+        "postgres": {
+          "id": "5LPqoPG4p0V8EFcd",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.5,
+      "position": [
+        -420,
+        320
+      ],
+      "id": "72cfde60-750a-4c71-8129-94b576ee017a",
+      "name": "Get File Contents",
+      "credentials": {
+        "postgres": {
+          "id": "5LPqoPG4p0V8EFcd",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.5,
+      "position": [
+        -260,
+        320
+      ],
+      "id": "03248fc4-af25-4485-83e9-bf4ae09cfd5b",
+      "name": "Query Document Rows",
+      "credentials": {
+        "postgres": {
+          "id": "5LPqoPG4p0V8EFcd",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1,
+      "position": [
+        100,
+        280
+      ],
+      "id": "7f7de476-5cbb-4949-a441-8c70cfd9febe",
+      "name": "Supabase Vector Store1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "CAivPbO134UFXAZV",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -840,
+        320
+      ],
+      "id": "3fb8ae83-c0e7-4ee6-9a19-842dd817b251",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "HqAQOWX6Nr9AAm3H",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        340
+      ],
+      "id": "bbe9fcf9-4644-4b89-bc04-2a48fa6dd762",
+      "name": "Embeddings Google Gemini",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "HqAQOWX6Nr9AAm3H",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -780,
+        100
+      ],
+      "id": "6c60c0e8-5b59-4bc2-9f0c-4be4fcc5ba8f",
+      "name": "Code"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1420,
+        800
+      ],
+      "id": "0a8cd2b3-466d-4b23-839c-01bea9abdad4",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1580,
+        800
+      ],
+      "id": "391eebef-96ab-4e66-b11e-fea342a8ebd8",
+      "name": "Read webhook content"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1260,
+        640
+      ],
+      "id": "2dd896d1-a5b2-45b7-8de0-37bf94dda2dd",
+      "name": "Extract file Extension"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1800,
+        960
+      ],
+      "id": "d9b22238-5652-455d-b7a6-f406092b5cae",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -1100,
+        980
+      ],
+      "id": "de855521-4a3d-4144-9cd0-a1f75a469069",
+      "name": "Insert Document Info",
+      "executeOnce": true,
+      "credentials": {
+        "postgres": {
+          "id": "5LPqoPG4p0V8EFcd",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "e2d04302-69b2-4db8-ba80-9c7fe942e8b0",
+      "name": "Switch1",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        -780,
+        780
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "b29ccf39-fc92-442c-823c-9e3f0058d896",
+      "name": "Default Data Loader1",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        1520,
+        1120
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "4a65ae0a-a56a-4e5b-a2b1-f5627f378e10",
+      "name": "Extract Document Text1",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        0,
+        1100
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {},
+      "id": "650a2b01-6441-4214-9473-b93e878388e9",
+      "name": "Extract PDF Text1",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -540,
+        540
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "dc35f0d6-172d-44e1-b000-df60da5114e2",
+      "name": "Aggregate1",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        -320,
+        720
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "fcc0a0dd-a2b8-4aa3-a725-e664595e9a71",
+      "name": "Summarize1",
+      "type": "n8n-nodes-base.summarize",
+      "typeVersion": 1,
+      "position": [
+        -120,
+        800
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "5cca6ffd-8717-4885-91f1-80b6650d4c4e",
+      "name": "Insert into Supabase Vectorstore1",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1,
+      "position": [
+        1440,
+        900
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "CAivPbO134UFXAZV",
+          "name": "Supabase account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {},
+      "id": "2f456f31-8ece-4e58-a032-6fcd51c150a4",
+      "name": "Extract from Excel1",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -540,
+        720
+      ]
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        400,
+        580
+      ],
+      "id": "50a8f642-0d99-4ac0-afe8-55718dfddc7a",
+      "name": "Set Schema1"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -540,
+        900
+      ],
+      "id": "42835083-58e9-4c1d-a8ee-1d4b1a09bef8",
+      "name": "Extract from CSV1"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -320,
+        900
+      ],
+      "id": "142ef012-3c4b-4697-9798-232a74c58f5f",
+      "name": "Insert Table Rows1",
+      "credentials": {
+        "postgres": {
+          "id": "5LPqoPG4p0V8EFcd",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1280,
+        1120
+      ],
+      "id": "a9f6e667-1f85-4a25-b57d-27bc3f72ebad",
+      "name": "Embeddings Google Gemini2",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "HqAQOWX6Nr9AAm3H",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "337a3ae8-7ee9-40d6-bf53-942c83d12b6a",
+      "name": "Create Chunks From Doc",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        900
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "b6b2c02a-bf3f-42a6-a79f-20ebe8bc8981",
+      "name": "Chunks To List",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        620,
+        900
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "68218e61-692e-41a3-8762-d5ccac998023",
+      "name": "Generate Contextual Text",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.4,
+      "position": [
+        820,
+        900
+      ]
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        900,
+        1120
+      ],
+      "id": "1fe16fb2-7e3a-4750-8c0a-082aeff317c5",
+      "name": "Google Gemini Chat Model2",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "HqAQOWX6Nr9AAm3H",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "f537743f-b3dd-4aab-b273-126d09dd12fc",
+      "name": "Get Values",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1200,
+        900
+      ]
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        1580,
+        1260
+      ],
+      "id": "9a08dd25-4219-4de1-8462-e40437819e3e",
+      "name": "Recursive Character Text Splitter"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -960,
+        800
+      ],
+      "id": "17f76b32-6804-4b6c-ae25-c0ce9daec6e9",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -540,
+        1100
+      ],
+      "id": "e8a40a79-283a-4729-90ed-304dbdce8018",
+      "name": "Google Drive"
+    },
+    {
+      "parameters": {},
+      "id": "5b0447f3-3880-47e5-8daf-dbf9d3eb30b9",
+      "name": "Convert MS files to Google Docs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        -360,
+        1100
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "738be4b2-4c40-42a9-82b3-ebc124e44e72",
+      "name": "Download File1",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -180,
+        1100
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        400,
+        1260
+      ],
+      "id": "adf3b97d-1f73-49e0-ace5-a9c6cc598261",
+      "name": "Google Drive1"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        620,
+        1260
+      ],
+      "id": "7e20af29-435f-4926-ba09-567b372255c3",
+      "name": "Google Drive2"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2000,
+        900
+      ],
+      "id": "91c4141e-fb26-4fbc-b6f5-3bd98b551f95",
+      "name": "Update chunk document id",
+      "credentials": {
+        "supabaseApi": {
+          "id": "CAivPbO134UFXAZV",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        620,
+        580
+      ],
+      "id": "6db1055a-7bd7-435c-861c-d9d02b5e4c96",
+      "name": "Update Schema for Document",
+      "credentials": {
+        "postgres": {
+          "id": "5LPqoPG4p0V8EFcd",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        2000,
+        1080
+      ],
+      "id": "8d1efbba-37fb-442a-8ebb-a74d79f17f32",
+      "name": "Update Status for Document",
+      "credentials": {
+        "postgres": {
+          "id": "5LPqoPG4p0V8EFcd",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "a4b6eda4-9003-4f70-928e-9fcd8d34263b",
+      "name": "Aggregate",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1800,
+        900
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "51f0de7c-201d-4363-9d90-fe26515018cb",
+      "name": "Fetch Page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        -360,
+        1320
+      ]
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.markdown",
+      "typeVersion": 1,
+      "position": [
+        -180,
+        1320
+      ],
+      "id": "8c9757c8-56c9-4c9b-9eb8-823ff8bdf3df",
+      "name": "Markdown2"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        1320
+      ],
+      "id": "bd877e99-c398-4414-b3f5-2f27f605d4ee",
+      "name": "Strip2"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1540,
+        1320
+      ],
+      "id": "a67a54e7-eb55-42e5-8f1d-3e396d5b15a3",
+      "name": "Read webhook content1"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -1320,
+        1320
+      ],
+      "id": "e132c7df-e72c-468e-9952-513918d53013",
+      "name": "Insert Document Info1",
+      "executeOnce": true,
+      "credentials": {
+        "postgres": {
+          "id": "5LPqoPG4p0V8EFcd",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1800,
+        1180
+      ],
+      "id": "fa1c2f88-5179-467e-a4a0-c2d8c053a9ad",
+      "name": "Upload url webhook",
+      "webhookId": "13d1789b-2a28-43dd-938f-21b9cdff03f4"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1800,
+        800
+      ],
+      "id": "05c27f16-aed0-4b6c-a9c7-0be4d57d0a40",
+      "name": "Upload file webhook",
+      "webhookId": "13d1789b-2a28-43dd-938f-21b9cdff03f4"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -1120,
+        1320
+      ],
+      "id": "81691459-d744-4f3e-90a2-d367b3a25d6e",
+      "name": "Switch2"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -920,
+        1780
+      ],
+      "id": "40d6d1e1-0025-4af8-bba2-7f1691b94b34",
+      "name": "Fetch Sitemap Page"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -720,
+        1780
+      ],
+      "id": "742387dc-60ff-4d70-a51f-e161cfbe47b0",
+      "name": "Code1"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -280,
+        1900
+      ],
+      "id": "ad9863c3-1d8f-46a3-a642-6075a12c9dd0",
+      "name": "Code3"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.xml",
+      "typeVersion": 1,
+      "position": [
+        160,
+        1900
+      ],
+      "id": "c8485f35-c37e-4fa6-9a1e-c3df86395616",
+      "name": "XML1",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -580,
+        1560
+      ],
+      "id": "4e9c5839-461e-4539-8f1d-3470acbe2e6d",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -520,
+        1780
+      ],
+      "id": "10310ce0-504f-4233-82e8-eecb320cdc9b",
+      "name": "If1"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -280,
+        1700
+      ],
+      "id": "ea56665f-0193-4b51-861f-73bade8fc42c",
+      "name": "Code4"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.markdown",
+      "typeVersion": 1,
+      "position": [
+        580,
+        1700
+      ],
+      "id": "6d654685-2869-4e25-bd62-7a93a006ba4b",
+      "name": "Markdown3"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.markdown",
+      "typeVersion": 1,
+      "position": [
+        1140,
+        1900
+      ],
+      "id": "1e8397a6-b48b-4107-b6f5-339121be74fc",
+      "name": "Markdown4",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        780,
+        1700
+      ],
+      "id": "64114969-4e76-434f-84a6-c69e4e32a288",
+      "name": "Strip3"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        380,
+        1900
+      ],
+      "id": "18d3b9a2-b8a4-4826-83d8-972ab0402d60",
+      "name": "find URLs1"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        760,
+        1900
+      ],
+      "id": "d4a9be90-b21c-4eae-8367-30047e103642",
+      "name": "GET URLs2",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        1900
+      ],
+      "id": "f1f9ceb9-d590-43fc-87c0-dc54a51ab8c2",
+      "name": "Strip4"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -60,
+        1900
+      ],
+      "id": "dc417343-9fa5-44d6-a523-8a6ba3d257f3",
+      "name": "GET XML1",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        160,
+        1700
+      ],
+      "id": "89ba1d4c-abf1-40ba-a14a-20777fdadca8",
+      "name": "GET URLs3",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -60,
+        1700
+      ],
+      "id": "8315b45d-99a3-4e04-a07b-72a28c6f5b89",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        380,
+        1700
+      ],
+      "id": "49889a78-3130-474b-92b7-5a87652cc1dc",
+      "name": "Wait",
+      "webhookId": "ecc2a64f-0bc4-4cb3-9457-7a8c96e1fad0"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.summarize",
+      "typeVersion": 1.1,
+      "position": [
+        380,
+        1500
+      ],
+      "id": "ea8964fa-30ba-4339-bf32-75c5ec21b12e",
+      "name": "Summarize"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        560,
+        1900
+      ],
+      "id": "0a9fc3c0-d479-4563-be66-780ad7b68a38",
+      "name": "Loop Over Items1"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        960,
+        1900
+      ],
+      "id": "3bd5dc15-9505-4f90-b99e-45a6bb795f0a",
+      "name": "Wait1",
+      "webhookId": "ecc2a64f-0bc4-4cb3-9457-7a8c96e1fad0"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        120,
+        1500
+      ],
+      "id": "c4aae24a-2af0-4182-8c90-bfa114ca2e31",
+      "name": "Aggregate2"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        700,
+        2100
+      ],
+      "id": "d572bc3e-2902-4f69-9aa3-12104f8c1837",
+      "name": "Aggregate3"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.summarize",
+      "typeVersion": 1.1,
+      "position": [
+        900,
+        2100
+      ],
+      "id": "ffae6284-4356-4833-8f05-6ccffd2c5f5e",
+      "name": "Summarize2"
+    }
+  ],
+  "pinData": {
+    "Generate Contextual Text": [
+      {
+        "json": {
+          "text": "Big Pig restaurant website menu and live music event announcement."
+        }
+      },
+      {
+        "json": {
+          "text": "Big Pig restaurant locations, contact information, and menu information.  Footer with website links."
+        }
+      },
+      {
+        "json": {
+          "text": "Restaurant menu description for Big Pig, highlighting fusion cuisine (American grill & Vietnamese) and beverage options."
+        }
+      },
+      {
+        "json": {
+          "text": "Restaurant advertisement featuring promotions, live music events, and catering services."
+        }
+      },
+      {
+        "json": {
+          "text": "Restaurant advertisement/menu with contact information and locations."
+        }
+      },
+      {
+        "json": {
+          "text": "Restaurant advertisement or menu featuring burger descriptions, customer testimonials, and possibly pricing."
+        }
+      },
+      {
+        "json": {
+          "text": "Footer and menu section of a Big Pig restaurant website, including contact information, copyright, and navigation links."
+        }
+      },
+      {
+        "json": {
+          "text": "Footer and navigation elements of a Big Pig restaurant website, including contact information, copyright notice, and menu links."
+        }
+      },
+      {
+        "json": {
+          "text": "Restaurant contact information, locations, and website links; page 6 of a larger document, likely a brochure or website printout."
+        }
+      },
+      {
+        "json": {
+          "text": "BIG PIG restaurant website footer and careers section."
+        }
+      },
+      {
+        "json": {
+          "text": "Big Pig restaurant menu and contact information."
+        }
+      },
+      {
+        "json": {
+          "text": "Footer and menu navigation from a Big Pig restaurant menu/website."
+        }
+      },
+      {
+        "json": {
+          "text": "Big Pig restaurant menu and contact information, including locations and website links.  Page 9 of a brochure or website."
+        }
+      },
+      {
+        "json": {
+          "text": "Restaurant Big Pig menu, locations, and contact information; page from website."
+        }
+      },
+      {
+        "json": {
+          "text": "Restaurant menu, contact information, and website links; likely the last page of a brochure or similar marketing material."
+        }
+      },
+      {
+        "json": {
+          "text": "Big Pig Professional Catering advertisement highlighting services and cuisine."
+        }
+      },
+      {
+        "json": {
+          "text": "Big Pig Professional Catering services menu and event planning information."
+        }
+      },
+      {
+        "json": {
+          "text": "Restaurant menu and contact information for Big Pig restaurants in Ho Chi Minh City, including location details, phone numbers, and website links.  Footer with navigation links also included."
+        }
+      },
+      {
+        "json": {
+          "text": "Big Pig restaurant website footer and menu information."
+        }
+      },
+      {
+        "json": {
+          "text": "Big Pig restaurant website footer and menu navigation."
+        }
+      },
+      {
+        "json": {
+          "text": "Website footer and menu, including location details and contact information for Big Pig restaurants."
+        }
+      },
+      {
+        "json": {
+          "text": "Big Pig restaurant website footer and navigation menu, including location details and contact information."
+        }
+      },
+      {
+        "json": {
+          "text": "Big Pig restaurant website homepage; menu and welcome message."
+        }
+      },
+      {
+        "json": {
+          "text": "Footer and menu section of Big Pig Truong Son restaurant website, including contact information, promotions, and copyright details."
+        }
+      },
+      {
+        "json": {
+          "text": "Big Pig restaurant menu and description."
+        }
+      },
+      {
+        "json": {
+          "text": "Big Pig restaurant advertisement and menu/location information."
+        }
+      },
+      {
+        "json": {
+          "text": "This chunk is from a Big Pig restaurant website, containing navigation menus, location information, event details (live music), and copyright information."
+        }
+      },
+      {
+        "json": {
+          "text": "Big Pig restaurant website content, including menu, locations, contact information, and a blog post about live music."
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "RAG AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RAG AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Documents": {
+      "ai_tool": [
+        [
+          {
+            "node": "RAG AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get File Contents": {
+      "ai_tool": [
+        [
+          {
+            "node": "RAG AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Document Rows": {
+      "ai_tool": [
+        [
+          {
+            "node": "RAG AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store1": {
+      "ai_tool": [
+        [
+          {
+            "node": "RAG AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "RAG AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Google Gemini": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "RAG AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Extract file Extension",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read webhook content": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract file Extension": {
+      "main": [
+        [
+          {
+            "node": "Insert Document Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        []
+      ]
+    },
+    "Insert Document Info": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader1": {
+      "ai_document": [
+        [
+          {
+            "node": "Insert into Supabase Vectorstore1",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Document Text1": {
+      "main": [
+        [
+          {
+            "node": "Create Chunks From Doc",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Google Drive1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract PDF Text1": {
+      "main": [
+        [
+          {
+            "node": "Create Chunks From Doc",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate1": {
+      "main": [
+        [
+          {
+            "node": "Summarize1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarize1": {
+      "main": [
+        [
+          {
+            "node": "Set Schema1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Create Chunks From Doc",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from Excel1": {
+      "main": [
+        [
+          {
+            "node": "Aggregate1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Insert Table Rows1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Schema1": {
+      "main": [
+        [
+          {
+            "node": "Update Schema for Document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from CSV1": {
+      "main": [
+        [
+          {
+            "node": "Aggregate1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Insert Table Rows1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Google Gemini2": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Insert into Supabase Vectorstore1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Chunks From Doc": {
+      "main": [
+        [
+          {
+            "node": "Chunks To List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chunks To List": {
+      "main": [
+        [
+          {
+            "node": "Generate Contextual Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Contextual Text": {
+      "main": [
+        [
+          {
+            "node": "Get Values",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Contextual Text",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Values": {
+      "main": [
+        [
+          {
+            "node": "Insert into Supabase Vectorstore1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader1",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch1": {
+      "main": [
+        [
+          {
+            "node": "Extract PDF Text1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract from Excel1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract from CSV1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Switch1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive": {
+      "main": [
+        [
+          {
+            "node": "Convert MS files to Google Docs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert MS files to Google Docs": {
+      "main": [
+        [
+          {
+            "node": "Download File1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download File1": {
+      "main": [
+        [
+          {
+            "node": "Extract Document Text1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive1": {
+      "main": [
+        [
+          {
+            "node": "Google Drive2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert into Supabase Vectorstore1": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update chunk document id": {
+      "main": [
+        []
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Update chunk document id",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Update Status for Document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Page": {
+      "main": [
+        [
+          {
+            "node": "Markdown2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Markdown2": {
+      "main": [
+        [
+          {
+            "node": "Strip2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read webhook content1": {
+      "main": [
+        [
+          {
+            "node": "Insert Document Info1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Strip2": {
+      "main": [
+        [
+          {
+            "node": "Create Chunks From Doc",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Document Info1": {
+      "main": [
+        [
+          {
+            "node": "Switch2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload url webhook": {
+      "main": [
+        [
+          {
+            "node": "Read webhook content1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload file webhook": {
+      "main": [
+        [
+          {
+            "node": "Read webhook content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch2": {
+      "main": [
+        [
+          {
+            "node": "Fetch Page",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fetch Sitemap Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Sitemap Page": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code3": {
+      "main": [
+        [
+          {
+            "node": "GET XML1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "XML1": {
+      "main": [
+        [
+          {
+            "node": "find URLs1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Code4",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code4": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Markdown3": {
+      "main": [
+        [
+          {
+            "node": "Strip3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Markdown4": {
+      "main": [
+        [
+          {
+            "node": "Strip4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Strip3": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "find URLs1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET URLs2": {
+      "main": [
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Strip4": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET XML1": {
+      "main": [
+        [
+          {
+            "node": "XML1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET URLs3": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Aggregate2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "GET URLs3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Markdown3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items1": {
+      "main": [
+        [
+          {
+            "node": "Aggregate3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "GET URLs2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "Markdown4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate2": {
+      "main": [
+        [
+          {
+            "node": "Summarize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate3": {
+      "main": [
+        [
+          {
+            "node": "Summarize2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarize": {
+      "main": [
+        [
+          {
+            "node": "Create Chunks From Doc",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarize2": {
+      "main": [
+        [
+          {
+            "node": "Create Chunks From Doc",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "4829d09a-a483-452a-b086-81f33e625676",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2f9a676940fcfba0fc018f4ccba4b9b9a7ad04946c86aa72d40912f4039eb118"
+  },
+  "id": "C4OTfT5IHwzap2Tc",
+  "tags": []
+}

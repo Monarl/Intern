@@ -3,6 +3,18 @@ import { createClient } from '@/lib/supabase/server-app';
 import { createAdminClient } from '@/app/lib/supabase/server';
 import { getUserRole } from '@/app/lib/supabase/user-roles';
 
+// Helper function to sanitize names for storage paths
+function sanitizeForStorage(name: string): string {
+  return name
+    .normalize('NFD') // Normalize Unicode characters
+    .replace(/[\u0300-\u036f]/g, '') // Remove diacritics
+    .replace(/[^\w\-_.]/g, '-') // Replace invalid characters with hyphens (using \w for better Unicode support)
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/--+/g, '-') // Replace multiple hyphens with single hyphen
+    .replace(/^-+|-+$/g, '') // Remove leading/trailing hyphens
+    .toLowerCase();
+}
+
 // Max file size: 20MB
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
 const ALLOWED_FILE_TYPES = [
@@ -95,7 +107,10 @@ export async function POST(request: NextRequest) {
     }
 
     // File upload
-    const desiredPath = `${kb.name}/${file.name}`;
+    const sanitizedKbName = sanitizeForStorage(kb.name);
+    const sanitizedFileName = sanitizeForStorage(file.name);
+    const desiredPath = `${sanitizedKbName}/${sanitizedFileName}`;
+    
     const { data: uploadData, error: uploadError } = await adminSupabase.storage
       .from('chatbot-documents')
       .upload(desiredPath, file);
@@ -104,39 +119,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: `Failed to upload file: ${uploadError.message}` }, { status: 500 });
     }
 
-    // Get actual path and filename
+    // Get actual path
     const actualPath = uploadData.path;
-    const actualFilename = actualPath.split('/').pop() || file.name;
 
-    // Create document record
-    const { data: documentData, error: documentError } = await adminSupabase
-      .from('documents')
-      .insert({
-        knowledge_base_id: kb.id,
-        title: actualFilename,
-        file_path: actualPath,
-        file_type: file.type,
-        status: 'processing'
-      })
-      .select();
-
-    if (documentError) {
-      // Attempt to delete the uploaded file if document record creation fails
-      await adminSupabase.storage
-        .from('chatbot-documents')
-        .remove([actualPath]);
-        
-      return NextResponse.json({ error: `Failed to create document record: ${documentError.message}` }, { status: 500 });
-    }
-
-    // Trigger n8n webhook
+    // Trigger n8n webhook for document processing
     try {
       const response = await fetch('http://localhost:5678/webhook/upload-doc', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           path: actualPath,
-          file_name: actualFilename,
+          file_name: file.name, // Use original filename for n8n processing
           knowledge_base_id: kb.id
         })
       });
@@ -151,7 +144,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      document: documentData?.[0],
+      message: 'File uploaded successfully and processing started',
+      filePath: actualPath,
       knowledgeBase: kb
     });
     

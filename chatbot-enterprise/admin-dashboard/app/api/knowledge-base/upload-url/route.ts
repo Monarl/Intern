@@ -94,27 +94,7 @@ export async function POST(request: NextRequest) {
       kb = data[0];
     }
 
-    // Create document record for the URL
-    const { data: documentData, error: documentError } = await adminSupabase
-      .from('documents')
-      .insert({
-        knowledge_base_id: kb.id,
-        title: url,
-        file_path: null, // No file path for URLs
-        file_type: isSitemap ? 'sitemap' : 'url',
-        status: 'processing',
-        metadata: {
-          url: url,
-          is_sitemap: !!isSitemap
-        }
-      })
-      .select();
-
-    if (documentError) {
-      return NextResponse.json({ error: `Failed to create document record: ${documentError.message}` }, { status: 500 });
-    }
-
-    // Trigger n8n webhook
+    // Trigger n8n webhook for document processing
     try {
       const response = await fetch('http://localhost:5678/webhook/upload-url', {
         method: 'POST',
@@ -137,7 +117,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      document: documentData?.[0],
+      message: 'URL submitted successfully and processing started',
       knowledgeBase: kb
     });
 

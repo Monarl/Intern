@@ -32,7 +32,7 @@ export default function NewKnowledgeBaseDialog({
     
     setIsSubmitting(true)
     try {
-      const response = await fetch('/api/knowledge-base/list', {
+      const response = await fetch('/api/knowledge-base', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

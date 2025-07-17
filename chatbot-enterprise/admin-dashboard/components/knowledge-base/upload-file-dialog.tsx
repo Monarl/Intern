@@ -191,16 +191,23 @@ export default function UploadFileDialog({
               </div>
               <div className="divide-y">
                 {files.map((file) => (
-                  <div key={file.id} className="flex items-center justify-between py-2 px-4">
+                  <div  key={file.id} className={`py-2 px-4 ${ 
+                    file.status === 'error' 
+                    ? 'flex flex-col space-y-1'       // column layout → 2-line block
+                    : 'flex items-center justify-between'}`} 
+                  >
                     <div className="flex items-center gap-2 truncate max-w-[70%]">
                       {getStatusIcon(file.status)}
                       <span className="truncate">{file.name}</span>
                     </div>
                     
                     {file.status === 'error' ? (
-                      <div className="text-xs text-red-500 truncate max-w-[20%]" title={file.error}>
-                        {file.error}
-                      </div>
+                        <div
+                            className="w-full text-xs text-red-500 overflow-hidden whitespace-nowrap text-ellipsis" 
+                            title={file.error} 
+                        >
+                            {file.error} 
+                        </div>
                     ) : (
                       <div className="flex items-center">
                         {file.status === 'pending' && (
