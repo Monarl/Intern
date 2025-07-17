@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient, createAdminClient } from '@/app/lib/supabase/server';
+import { createAdminClient } from '@/app/lib/supabase/server';
 
 export type UserRole = 'Super Admin' | 'Knowledge Manager' | 'Chatbot Manager' | 'Analyst/Reporter' | 'Support Agent';
 
@@ -80,7 +80,8 @@ export async function assignRoleToUser(userId: string, roleName: UserRole) {
  */
 export async function getUserRole(userId: string): Promise<UserRole | null> {
   try {
-    const supabase = await createClient();
+    console.log('Getting role for user ID:', userId);
+    const supabase = await createAdminClient();
     
     // Get the role ID from the mapping
     const { data: mappingData, error: mappingError } = await supabase
@@ -95,8 +96,11 @@ export async function getUserRole(userId: string): Promise<UserRole | null> {
     }
     
     if (!mappingData?.role_id) {
+      console.log('No role mapping found for user');
       return null;
     }
+    
+    console.log('Found role mapping with role_id:', mappingData.role_id);
     
     // Get the role name using the role ID
     const { data: roleData, error: roleError } = await supabase
@@ -110,6 +114,7 @@ export async function getUserRole(userId: string): Promise<UserRole | null> {
       return null;
     }
     
+    console.log('Retrieved role name:', roleData?.name);
     return (roleData?.name as UserRole) || null;
   } catch (error) {
     console.error('Error in getUserRole:', error);
@@ -123,7 +128,10 @@ export async function getUserRole(userId: string): Promise<UserRole | null> {
  */
 export async function getAllRoles(): Promise<{ id: string; name: UserRole; permissions: Record<string, boolean> }[]> {
   try {
-    const supabase = await createClient();
+    // Use admin client to ensure we get all roles regardless of RLS
+    const supabase = await createAdminClient();
+    
+    console.log('Fetching all roles with admin client');
     
     const { data, error } = await supabase
       .from('user_roles')
@@ -134,6 +142,7 @@ export async function getAllRoles(): Promise<{ id: string; name: UserRole; permi
       return [];
     }
     
+    console.log('Roles retrieved:', data?.length);
     return data || [];
   } catch (error) {
     console.error('Error in getAllRoles:', error);

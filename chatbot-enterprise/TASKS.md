@@ -335,56 +335,33 @@ chatbot-enterprise/
 - [ ] Configure response filtering and safety checks
 
 ### Task 2.4: Knowledge Base Management UI
-**Priority: Medium | Estimated Time: 5 hours**
+**Priority: Medium | Estimated Time: 5 hours** ✅ **COMPLETED** (July 17, 2025)
 
-- [ ] Create knowledge base listing page
-- [ ] Implement file upload interface:
-  ```typescript
-  // components/FileUpload.tsx
-  import { useState } from 'react'
-  import { createClient } from '@/lib/supabase'
+- [x] Create knowledge base listing page
+- [x] Implement file upload interface with multi-file support
+- [x] Add URL input for web scraping with sitemap support
+- [x] Create document management interface
+- [x] Implement document deletion with embedding cleanup
+- [x] Add knowledge base creation and deletion functionality
+- [x] Implement role-based access control for knowledge base management
+- [x] Add appropriate documentation in `/docs/knowledge-base-api.md`
 
-  export function FileUpload({ knowledgeBaseId }: { knowledgeBaseId: string }) {
-    const [uploading, setUploading] = useState(false)
-    
-    const handleUpload = async (file: File) => {
-      setUploading(true)
-      try {
-        const supabase = createClient()
-        
-        // Upload file to Supabase Storage
-        const { data, error } = await supabase.storage
-          .from('documents')
-          .upload(`${knowledgeBaseId}/${file.name}`, file)
-        
-        if (error) throw error
-        
-        // Trigger n8n workflow for processing
-        await fetch('/api/process-document', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            knowledgeBaseId,
-            filePath: data.path,
-            fileName: file.name
-          })
-        })
-        
-        // Refresh UI
-      } catch (error) {
-        console.error('Upload failed:', error)
-      } finally {
-        setUploading(false)
-      }
-    }
-    
-    // Component JSX
-  }
-  ```
-
-- [ ] Add URL input for web scraping
-- [ ] Create document management interface
-- [ ] Implement document deletion with embedding cleanup
+**Implementation Notes:**
+- Created comprehensive UI for Knowledge Base management:
+  - Knowledge Base listing page with cards showing document counts
+  - Dialog components for creating KBs, uploading files, and adding URLs
+  - Document view page for each KB showing all documents
+  - Delete confirmations for both KBs and documents
+- API endpoints implemented for uploading files, URLs, and sitemaps
+- File validation for PDF, DOCX, XLSX, and CSV formats with 20MB limit
+- URL and sitemap validation implemented with checkbox toggle
+- Storage bucket `chatbot-documents` configured with proper permissions
+- n8n webhook integration implemented for processing documents
+- Per-file/URL upload progress tracking and status display
+- Toast notifications for success/error feedback
+- Cascading deletion of documents when KB is deleted
+- Storage cleanup when documents or KBs are deleted
+- Role-based access restrictions (Super Admin, Knowledge Manager only)
 
 ## Phase 3: Basic Chatbot Interface (Week 5-6)
 

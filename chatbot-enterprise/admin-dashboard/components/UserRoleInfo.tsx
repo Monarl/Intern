@@ -23,10 +23,12 @@ export default function UserRoleInfo() {
 
   useEffect(() => {
     const loadRoles = async () => {
-      if (user && userRole === 'Super Admin') {
+      if (user) {
+        console.log('Loading roles with userRole:', userRole);
         setLoadingRoles(true);
         try {
           const roleData = await getAllRoles();
+          console.log('Roles loaded:', roleData);
           setRoles(roleData);
         } catch (error) {
           console.error('Error loading roles:', error);
@@ -37,7 +39,7 @@ export default function UserRoleInfo() {
     };
 
     loadRoles();
-  }, [user, userRole]);
+  }, [user]);
 
   const handleRoleChange = async (newRole: UserRole) => {
     if (!user) return;
@@ -93,12 +95,14 @@ export default function UserRoleInfo() {
       </CardHeader>
       
       <CardContent>
-        {userRole === 'Super Admin' && (
+        {user && (
           <div className="mt-4">
             <h3 className="font-medium text-lg mb-2">Change Your Role</h3>
             <div className="flex flex-wrap gap-2">
               {loadingRoles ? (
                 <p>Loading roles...</p>
+              ) : roles.length === 0 ? (
+                <p>No roles available. Please check database configuration.</p>
               ) : (
                 roles.map((role) => (
                   <Button

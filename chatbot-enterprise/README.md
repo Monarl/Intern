@@ -208,6 +208,50 @@ admin-dashboard/
 - **State Management**: React Context API
 - **Notifications**: sonner toast
 
+## 🧠 Knowledge Base Management
+
+The Knowledge Base system allows storing and retrieving information from various sources:
+
+### Features
+
+- **Role-Based Access**: Only Super Admins and Knowledge Managers can manage KBs
+- **File Upload**: Support for PDF, DOCX, XLSX, and CSV files (max 20MB each)
+- **URL Processing**: Extract content from web pages and sitemaps
+- **Document Management**: Create, list, and delete documents
+- **KB Organization**: Group related documents in separate knowledge bases
+- **Storage Integration**: Supabase Storage with `chatbot-documents` bucket
+- **Vector Embeddings**: Automatic conversion to Gemini embeddings
+- **Cascading Deletion**: Proper cleanup of related data
+
+### User Interface
+
+- **Knowledge Base Listing**: View all knowledge bases with document counts
+- **Document Management**: View and delete documents within a knowledge base
+- **Multi-file Upload**: Upload multiple files with progress tracking and validation
+- **URL Processing**: Add URLs with sitemap detection option
+- **Toast Notifications**: Feedback for all operations
+- **Status Indicators**: Processing, completed, and error states for documents
+
+For detailed UI documentation, see [Knowledge Base UI](./docs/knowledge-base-ui.md).
+
+### API Endpoints
+
+- `GET /api/knowledge-base/list` - List all knowledge bases
+- `POST /api/knowledge-base` - Create a new knowledge base
+- `DELETE /api/knowledge-base/[id]` - Delete a knowledge base and all its documents
+- `POST /api/knowledge-base/upload-file` - Upload file to a knowledge base
+- `POST /api/knowledge-base/upload-url` - Add URL or sitemap to a knowledge base
+- `GET /api/knowledge-base/documents/[id]` - Get documents for a knowledge base
+- `DELETE /api/knowledge-base/document/[id]` - Delete a specific document
+
+For detailed API documentation, see [Knowledge Base API](./docs/knowledge-base-api.md).
+
+### n8n Integration
+
+Knowledge Base actions trigger n8n workflows via webhooks:
+- `/webhook/upload-doc` - Process uploaded documents
+- `/webhook/upload-url` - Extract content from URLs and sitemaps
+
 ## 🤝 Contributing
 
 1. Follow the n8n-first philosophy

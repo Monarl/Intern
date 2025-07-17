@@ -1,0 +1,148 @@
+{
+  "info": {
+    "_postman_id": "a5c521df-8f63-4f3a-8be7-a1c92b65d797",
+    "name": "Knowledge Base API Tests",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Tests for the Knowledge Base Management API endpoints in the Enterprise Chatbot Platform"
+  },
+  "item": [
+    {
+      "name": "List Knowledge Bases",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/knowledge-base/list",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "knowledge-base", "list"]
+        },
+        "description": "List all knowledge bases with document counts"
+      },
+      "response": []
+    },
+    {
+      "name": "Upload File to Knowledge Base",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": ""
+            },
+            {
+              "key": "knowledgeBaseName",
+              "value": "Test KB",
+              "type": "text",
+              "description": "Required if knowledgeBaseId is not provided"
+            },
+            {
+              "key": "knowledgeBaseId",
+              "value": "",
+              "type": "text",
+              "description": "Required if knowledgeBaseName is not provided"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/knowledge-base/upload-file",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "knowledge-base", "upload-file"]
+        },
+        "description": "Upload a file to a knowledge base"
+      },
+      "response": []
+    },
+    {
+      "name": "Upload URL to Knowledge Base",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"url\": \"https://example.com\",\n    \"knowledgeBaseName\": \"Test KB\",\n    \"knowledgeBaseId\": \"\",\n    \"isSitemap\": false\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/knowledge-base/upload-url",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "knowledge-base", "upload-url"]
+        },
+        "description": "Upload a URL to a knowledge base"
+      },
+      "response": []
+    },
+    {
+      "name": "Delete Document",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/knowledge-base/document/:id",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "knowledge-base", "document", ":id"],
+          "variable": [
+            {
+              "key": "id",
+              "value": "document-uuid",
+              "description": "UUID of the document to delete"
+            }
+          ]
+        },
+        "description": "Delete a document and associated storage file (if applicable)"
+      },
+      "response": []
+    },
+    {
+      "name": "Delete Knowledge Base",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/knowledge-base/:id",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "knowledge-base", ":id"],
+          "variable": [
+            {
+              "key": "id",
+              "value": "kb-uuid",
+              "description": "UUID of the knowledge base to delete"
+            }
+          ]
+        },
+        "description": "Delete a knowledge base and all its documents and files"
+      },
+      "response": []
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": ["pm.test(\"Status code is 200\", function () {", "    pm.response.to.have.status(200);", "});"]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ]
+}

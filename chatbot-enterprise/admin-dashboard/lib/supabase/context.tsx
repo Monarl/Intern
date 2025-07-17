@@ -42,7 +42,10 @@ export function SupabaseProvider({
     // Function to fetch the user's role using the utility function
     const fetchUserRole = async (userId: string) => {
       try {
-        return await getUserRole(userId);
+        console.log('Fetching role for user:', userId);
+        const role = await getUserRole(userId);
+        console.log('Role retrieved:', role);
+        return role;
       } catch (error) {
         console.error('Error fetching user role:', error)
         return null;
