@@ -1,33 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server-app';
 import { createAdminClient } from '@/app/lib/supabase/server';
 import { getUserRole } from '@/app/lib/supabase/user-roles';
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const documentId = params.id;
+    const { id: documentId } = await params;
     if (!documentId) {
       return NextResponse.json({ error: 'Document ID is required' }, { status: 400 });
     }
 
     // User validation and authentication check
-    const supabase = await createAdminClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError) {
+      console.error('Auth error:', authError);
+      return NextResponse.json({ error: 'Authentication error' }, { status: 401 });
+    }
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Role-based access control
+    // Role-based access control using admin client for role lookup
+    const adminSupabase = await createAdminClient();
     const userRole = await getUserRole(user.id);
     if (userRole !== 'Super Admin' && userRole !== 'Knowledge Manager') {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
     // First, get the document to check if it's a file or URL
-    const { data: document, error: documentError } = await supabase
+    const { data: document, error: documentError } = await adminSupabase
       .from('documents')
       .select('*, knowledge_bases(*)')
       .eq('id', documentId)
@@ -39,7 +46,7 @@ export async function DELETE(
 
     // If document has a file_path, delete the storage object
     if (document.file_path) {
-      const { error: storageError } = await supabase
+      const { error: storageError } = await adminSupabase
         .storage
         .from('chatbot-documents')
         .remove([document.file_path]);
@@ -52,7 +59,7 @@ export async function DELETE(
 
     // Delete the document record - this will cascade delete related document_chunks
     // due to the foreign key constraints defined in the database schema
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await adminSupabase
       .from('documents')
       .delete()
       .eq('id', documentId);

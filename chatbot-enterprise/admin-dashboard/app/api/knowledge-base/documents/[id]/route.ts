@@ -1,30 +1,34 @@
 import { NextResponse } from 'next/server';
-import { createClient, createAdminClient } from '@/app/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server-app';
+import { createAdminClient } from '@/app/lib/supabase/server';
 import { getUserRole } from '@/app/lib/supabase/user-roles';
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const kbId = params.id;
+    const { id: kbId } = await params;
     if (!kbId) {
       return NextResponse.json({ error: 'Knowledge base ID is required' }, { status: 400 });
     }
 
-    // User validation and authentication check - first try with client credentials
+    // User validation and authentication check - use proper server client with cookies
     const clientSupabase = await createClient();
     const { data: { user }, error: authError } = await clientSupabase.auth.getUser();
 
     // Debug auth issues
     console.log('Auth check in documents API:', user ? 'User authenticated' : 'No user');
-    if (authError) console.error('Auth error:', authError);
+    if (authError) {
+      console.error('Auth error:', authError);
+      return NextResponse.json({ error: 'Authentication error' }, { status: 401 });
+    }
     
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized - You must be logged in' }, { status: 401 });
     }
 
-    // Role-based access control
+    // Role-based access control using admin client for role lookup
     const userRole = await getUserRole(user.id);
     console.log('User role in documents API:', userRole);
     

@@ -5,10 +5,10 @@ import { getUserRole } from '@/app/lib/supabase/user-roles';
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const kbId = params.id;
+    const { id: kbId } = await params;
     if (!kbId) {
       return NextResponse.json({ error: 'Knowledge base ID is required' }, { status: 400 });
     }

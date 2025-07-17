@@ -363,6 +363,24 @@ chatbot-enterprise/
 - Storage cleanup when documents or KBs are deleted
 - Role-based access restrictions (Super Admin, Knowledge Manager only)
 
+### Bug Fix: Knowledge Base Documents API Authentication & Next.js 15 Compatibility
+**Priority: High | Estimated Time: 2 hours** ✅ **COMPLETED** (July 17, 2025)
+
+- [x] Fixed Next.js 15 async params issue in API routes - params must be awaited in server components
+- [x] Fixed client component React.use() suspension error - removed unnecessary Promise wrapping
+- [x] Fixed authentication in Knowledge Base Documents API routes using proper server-app client
+- [x] Updated all knowledge-base API routes to use consistent authentication pattern:
+  - Use `createClient()` from `server-app.ts` for authentication (includes cookies)
+  - Use `createAdminClient()` from `server.ts` for database operations (bypasses RLS)
+- [x] Fixed document deletion API route authentication
+- [x] Fixed knowledge base deletion API route async params
+
+**Implementation Notes:**
+- API routes now properly handle authentication with cookie-based sessions
+- Client components no longer use React.use() for static params
+- All async params in API routes are properly awaited
+- Super Admin and Knowledge Manager roles can now access documents UI without errors
+
 ## Phase 3: Basic Chatbot Interface (Week 5-6)
 
 ### Task 3.1: Chat Widget Development

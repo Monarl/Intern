@@ -1,6 +1,5 @@
 'use client'
 
-import React from 'react'
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, Trash2, FileText, Globe, ShieldAlert } from 'lucide-react'
@@ -34,9 +33,8 @@ interface ApiError {
 export default function DocumentsPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const { userRole, isLoading: userLoading } = useSupabase()
-  // Unwrap params with React.use() to handle the Promise
-  const unwrappedParams = React.use(Promise.resolve(params))
-  const id = unwrappedParams.id
+  // In client components, params is already resolved
+  const id = params.id
   const [loading, setLoading] = useState(true)
   const [knowledgeBase, setKnowledgeBase] = useState<KnowledgeBase | null>(null)
   const [documents, setDocuments] = useState<Document[]>([])
