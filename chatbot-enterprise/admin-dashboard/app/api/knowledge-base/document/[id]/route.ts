@@ -44,6 +44,13 @@ export async function DELETE(
       return NextResponse.json({ error: 'Document not found' }, { status: 404 });
     }
 
+    // Check if document is still processing
+    if (document.status === 'processing') {
+      return NextResponse.json({ 
+        error: `Cannot delete document "${document.title}". Document is still being processed. Please wait for processing to complete.`
+      }, { status: 409 });
+    }
+
     // If document has a file_path, delete the storage object
     if (document.file_path) {
       const { error: storageError } = await adminSupabase

@@ -108,7 +108,7 @@ export default function KnowledgeBasesPage() {
       setDeleteDialogOpen(false)
     } catch (error) {
       console.error('Error deleting knowledge base:', error)
-      toast.error('Failed to delete knowledge base')
+      toast.error(error instanceof Error ? error.message : 'Failed to delete knowledge base')
     }
   }
 

@@ -381,6 +381,21 @@ chatbot-enterprise/
 - All async params in API routes are properly awaited
 - Super Admin and Knowledge Manager roles can now access documents UI without errors
 
+### Prevention of Processing Document Deletion
+**Priority: Medium | Estimated Time: 1 hour** ✅ **COMPLETED** (July 17, 2025)
+
+- [x] Added status checks to prevent deletion of processing documents
+- [x] Added status checks to prevent deletion of knowledge bases with processing documents
+- [x] Updated API endpoints to return 409 Conflict with descriptive error messages
+- [x] Updated frontend error handling to display specific error messages to users
+
+**Implementation Notes:**
+- Knowledge base deletion blocked if any document has status='processing'
+- Document deletion blocked if status='processing'
+- Returns HTTP 409 (Conflict) with descriptive error messages
+- Frontend displays specific error messages via toast notifications
+- Prevents orphaned document_chunks from race conditions during n8n processing
+
 ## Phase 3: Basic Chatbot Interface (Week 5-6)
 
 ### Task 3.1: Chat Widget Development

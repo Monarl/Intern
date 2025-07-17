@@ -44,6 +44,24 @@ export async function DELETE(
       return NextResponse.json({ error: 'Knowledge base not found' }, { status: 404 });
     }
 
+    // Check if any documents in this KB are still processing
+    const { data: processingDocs, error: processingError } = await adminSupabase
+      .from('documents')
+      .select('id, title, status')
+      .eq('knowledge_base_id', kbId)
+      .eq('status', 'processing');
+
+    if (processingError) {
+      return NextResponse.json({ error: 'Failed to check document status' }, { status: 500 });
+    }
+
+    if (processingDocs && processingDocs.length > 0) {
+      return NextResponse.json({ 
+        error: `Cannot delete knowledge base. ${processingDocs.length} document(s) are still being processed. Please wait for processing to complete.`,
+        processingDocuments: processingDocs.map(doc => doc.title)
+      }, { status: 409 });
+    }
+
     // Get all documents for this KB to delete their storage objects
     const { data: documents, error: documentsError } = await adminSupabase
       .from('documents')
