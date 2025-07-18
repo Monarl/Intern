@@ -1,0 +1,14 @@
+Read phase 3 Basic Chatbot Interface and do the following task:
++ Implement the tasks in task 3.1 Chat Widget Develeopment using the various MCP tools list below
++ Use Supabase MCP to read the current schema and add only neccessary table for the whole phase 3 (For example: chat-message, chat-sessions, ...), do not create too many tables.
++ Read the RAG_Workflow.json to see the current RAG workflow for the chatbot. Then give me a markdown file for the json that the frontend from 3.1 you implemented will send to n8n and the output that the code expect n8n to return. Also document the extra task that you want n8n to do (For example: Insert user, bot message to supabase tables; Return the sessionId for the frontend; ...)
++ Read Chatbot_DoanhNghiep.md to make sure your implementation is inline with the project description.
+
+Note:
++ Do not create unneccesary files or folders, just create enough for the task I give you.
++ Everytime you finish coding a file, make sure it is error-free before moving on.
++ Before you code something, use the Brave MCP to fetch the latest documentations and best practices for that task to avoid code deprecations
+
+MCP tools:
++ Supabase MCP: Read schema, query to the project, manage Supabase real time, ...
++ Brave MCP: Search for latest documentations

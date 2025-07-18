@@ -1,2 +1,0 @@
-fix the param error (not fatal)
-not allow delete KB if any document is proccessed as well as not allowed delete proccessed document
