@@ -26,7 +26,6 @@ export function ChatWidget({
   const [inputMessage, setInputMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [sessionId, setSessionId] = useState<string>('')
-  const [sessionDbId, setSessionDbId] = useState<string>('')
   const [userIdentifier, setUserIdentifier] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
   
@@ -57,7 +56,7 @@ export function ChatWidget({
     if (!supabaseRef.current || !sessionId || !userIdentifier) return
 
     try {
-      const { data, error } = await supabaseRef.current
+      const { error } = await supabaseRef.current
         .from('chat_sessions')
         .insert({
           session_id: sessionId,
@@ -70,13 +69,9 @@ export function ChatWidget({
             user_agent: navigator.userAgent
           }
         })
-        .select('id')
-        .single()
 
       if (error) {
         console.error('Error creating chat session:', error)
-      } else if (data) {
-        setSessionDbId(data.id)
       }
     } catch (err) {
       console.error('Failed to create chat session:', err)
@@ -85,42 +80,49 @@ export function ChatWidget({
 
   // Subscribe to real-time message updates
   useEffect(() => {
-    if (!supabaseRef.current || !sessionDbId) return
+    if (!supabaseRef.current || !sessionId) return
+
+    console.log('Setting up real-time subscription for session:', sessionId)
 
     const channel = supabaseRef.current
-      .channel(`chat_messages_${sessionDbId}`)
+      .channel(`chat_messages_${sessionId}`)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
           table: 'chat_messages',
-          filter: `session_id=eq.${sessionDbId}`,
+          filter: `session_id=eq.${sessionId}`,
         },
         (payload) => {
+          console.log('Real-time message received:', payload)
           const newMessage = payload.new as any
           if (newMessage.role === 'assistant') {
+            console.log('Adding assistant message from real-time:', newMessage.content)
             setMessages(prev => [...prev, {
               id: newMessage.id,
               role: newMessage.role,
               content: newMessage.content,
               timestamp: newMessage.created_at,
-              metadata: newMessage.metadata
+              metadata: { ...newMessage.metadata, source: 'realtime' }
             }])
             setIsLoading(false)
           }
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        console.log('Real-time subscription status:', status)
+      })
 
     channelRef.current = channel
 
     return () => {
       if (channelRef.current) {
+        console.log('Cleaning up real-time subscription')
         supabaseRef.current?.removeChannel(channelRef.current)
       }
     }
-  }, [sessionDbId])
+  }, [sessionId])
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -129,13 +131,13 @@ export function ChatWidget({
 
   // Load chat history
   const loadChatHistory = useCallback(async () => {
-    if (!supabaseRef.current || !sessionDbId) return
+    if (!supabaseRef.current || !sessionId) return
 
     try {
       const { data, error } = await supabaseRef.current
         .from('chat_messages')
         .select('*')
-        .eq('session_id', sessionDbId)
+        .eq('session_id', sessionId)
         .order('created_at', { ascending: true })
 
       if (error) {
@@ -166,25 +168,22 @@ export function ChatWidget({
       console.error('Failed to load chat history:', err)
       setError('Failed to load chat history')
     }
-  }, [sessionDbId, welcomeMessage])
+  }, [sessionId, welcomeMessage])
 
-  // Load chat history when session DB ID is available
+  // Load chat history when session ID is available
   useEffect(() => {
-    if (sessionDbId && isOpen) {
+    if (sessionId && isOpen) {
       loadChatHistory()
     }
-  }, [sessionDbId, isOpen, loadChatHistory])
+  }, [sessionId, isOpen, loadChatHistory])
 
   // Handle opening chat
   const handleOpen = useCallback(async () => {
     setIsOpen(true)
     setIsMinimized(false)
     
-    if (sessionId && userIdentifier && !sessionDbId) {
+    if (sessionId && userIdentifier) {
       await createChatSession()
-    }
-    
-    if (sessionDbId) {
       await loadChatHistory()
     }
     
@@ -192,7 +191,7 @@ export function ChatWidget({
     setTimeout(() => {
       inputRef.current?.focus()
     }, 100)
-  }, [sessionId, userIdentifier, sessionDbId, createChatSession, loadChatHistory])
+  }, [sessionId, userIdentifier, createChatSession, loadChatHistory])
 
   // Send message to n8n workflow
   const sendToN8n = useCallback(async (message: string) => {
@@ -209,6 +208,8 @@ export function ChatWidget({
       }
     }
 
+    console.log('Sending to n8n:', requestBody)
+
     const response = await fetch(n8nWebhookUrl, {
       method: 'POST',
       headers: {
@@ -222,18 +223,20 @@ export function ChatWidget({
     }
 
     const data: N8nChatResponse = await response.json()
+    console.log('N8N Response:', data)
+    
     return data
   }, [n8nWebhookUrl, sessionId, chatbotId, userIdentifier])
 
   // Save message to database
   const saveMessage = useCallback(async (role: 'user' | 'assistant', content: string, metadata?: any) => {
-    if (!supabaseRef.current || !sessionDbId) return
+    if (!supabaseRef.current || !sessionId) return
 
     try {
       const { error } = await supabaseRef.current
         .from('chat_messages')
         .insert({
-          session_id: sessionDbId,
+          session_id: sessionId,
           role,
           content,
           metadata: metadata || {}
@@ -245,11 +248,11 @@ export function ChatWidget({
     } catch (err) {
       console.error('Failed to save message:', err)
     }
-  }, [sessionDbId])
+  }, [sessionId])
 
   // Handle sending message
   const handleSendMessage = useCallback(async () => {
-    if (!inputMessage.trim() || isLoading || !sessionDbId) return
+    if (!inputMessage.trim() || isLoading || !sessionId) return
 
     const userMessage = inputMessage.trim()
     setInputMessage('')
@@ -269,8 +272,27 @@ export function ChatWidget({
       // Save user message to database
       await saveMessage('user', userMessage)
 
-      // Send to n8n workflow - the response will come via real-time subscription
-      await sendToN8n(userMessage)
+      // Send to n8n workflow and get immediate response
+      const n8nResponse = await sendToN8n(userMessage)
+      
+      // If we get a response, add it immediately and stop loading
+      if (n8nResponse?.response) {
+        console.log('Got immediate response from n8n:', n8nResponse.response)
+        setMessages(prev => [...prev, {
+          id: `assistant_${Date.now()}`,
+          role: 'assistant',
+          content: n8nResponse.response,
+          timestamp: new Date().toISOString(),
+          metadata: { source: 'n8n_direct' }
+        }])
+        setIsLoading(false)
+      } else {
+        // If no immediate response, wait for real-time or timeout
+        setTimeout(() => {
+          setIsLoading(false)
+          setError('Response timeout. Please try again.')
+        }, 30000) // 30 second timeout
+      }
 
     } catch (err) {
       console.error('Error sending message:', err)
@@ -278,16 +300,16 @@ export function ChatWidget({
       setIsLoading(false)
       
       // Add error message to UI
-      const errorMsgObj: ChatMessage = {
+      const errorMessage: ChatMessage = {
         id: `error_${Date.now()}`,
         role: 'assistant',
         content: 'Sorry, I encountered an error. Please try again.',
         timestamp: new Date().toISOString(),
         metadata: { error: true }
       }
-      setMessages(prev => [...prev, errorMsgObj])
+      setMessages(prev => [...prev, errorMessage])
     }
-  }, [inputMessage, isLoading, sessionDbId, saveMessage, sendToN8n])
+  }, [inputMessage, isLoading, sessionId, saveMessage, sendToN8n])
 
   // Handle key press
   const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
@@ -467,7 +489,7 @@ export function ChatWidget({
                       onChange={(e) => setInputMessage(e.target.value)}
                       onKeyDown={handleKeyPress}
                       placeholder="Type your message..."
-                      disabled={isLoading || !sessionDbId}
+                      disabled={isLoading || !sessionId}
                       className={cn(
                         "border-slate-200 rounded-2xl h-12",
                         "focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",
@@ -475,7 +497,7 @@ export function ChatWidget({
                         "transition-all duration-200 placeholder-slate-400"
                       )}
                     />
-                    {!sessionDbId && (
+                    {!sessionId && (
                       <div className="absolute inset-0 flex items-center justify-center bg-white/80 rounded-2xl">
                         <span className="text-xs text-slate-500">Connecting...</span>
                       </div>
@@ -483,7 +505,7 @@ export function ChatWidget({
                   </div>
                   <Button
                     onClick={handleSendMessage}
-                    disabled={!inputMessage.trim() || isLoading || !sessionDbId}
+                    disabled={!inputMessage.trim() || isLoading || !sessionId}
                     className={cn(
                       "h-12 w-12 rounded-2xl shadow-md",
                       "hover:shadow-lg hover:scale-105 active:scale-95",

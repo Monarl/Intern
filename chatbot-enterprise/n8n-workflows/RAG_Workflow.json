@@ -20,6 +20,8 @@
     },
     {
       "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"response\": {{$json?.output.toJsonString() }},\n  \"sessionId\": \"{{$('Edit Fields').item.json.sessionId}}\"\n}\n",
         "options": {}
       },
       "id": "ec8f4116-b80f-4267-9140-8e72017cdbe0",
@@ -28,7 +30,7 @@
       "typeVersion": 1.1,
       "position": [
         -280,
-        100
+        60
       ]
     },
     {
@@ -38,7 +40,7 @@
             {
               "id": "9a9a245e-f1a1-4282-bb02-a81ffe629f0f",
               "name": "chatInput",
-              "value": "={{ $json?.chatInput || $json.body.chatInput }}",
+              "value": "={{ $json?.chatInput || $json.body.message }}",
               "type": "string"
             },
             {
@@ -78,7 +80,7 @@
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "chatbot",
+        "path": "rag-chat",
         "responseMode": "responseNode",
         "options": {}
       },
@@ -105,7 +107,7 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.6,
       "position": [
-        -620,
+        -600,
         100
       ]
     },
@@ -272,6 +274,41 @@
       ],
       "id": "6c60c0e8-5b59-4bc2-9f0c-4be4fcc5ba8f",
       "name": "Code"
+    },
+    {
+      "parameters": {
+        "tableId": "chat_messages",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "session_id",
+              "fieldValue": "={{ $('Edit Fields').item.json.sessionId }}"
+            },
+            {
+              "fieldId": "role",
+              "fieldValue": "assistant"
+            },
+            {
+              "fieldId": "content",
+              "fieldValue": "={{ $('RAG AI Agent').item.json.output }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -280,
+        -120
+      ],
+      "id": "b01bdc17-e625-45b0-af53-ee8efc7891a7",
+      "name": "Supabase",
+      "credentials": {
+        "supabaseApi": {
+          "id": "CAivPbO134UFXAZV",
+          "name": "Supabase account"
+        }
+      }
     }
   ],
   "connections": {
@@ -284,6 +321,11 @@
             "index": 0
           }
         ]
+      ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        []
       ]
     },
     "Edit Fields": {
@@ -324,6 +366,11 @@
         [
           {
             "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Supabase",
             "type": "main",
             "index": 0
           }

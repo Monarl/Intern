@@ -40,9 +40,8 @@ export interface Database {
       }
       chat_sessions: {
         Row: {
-          id: string
+          session_id: string  // Now the primary key
           chatbot_id: string | null
-          session_id: string
           user_identifier: string | null
           platform: string | null
           status: string | null
@@ -51,9 +50,8 @@ export interface Database {
           updated_at: string | null
         }
         Insert: {
-          id?: string
+          session_id: string  // Required primary key
           chatbot_id?: string | null
-          session_id: string
           user_identifier?: string | null
           platform?: string | null
           status?: string | null
@@ -62,9 +60,8 @@ export interface Database {
           updated_at?: string | null
         }
         Update: {
-          id?: string
+          session_id?: string  // Can't update primary key normally
           chatbot_id?: string | null
-          session_id?: string
           user_identifier?: string | null
           platform?: string | null
           status?: string | null
@@ -76,7 +73,7 @@ export interface Database {
       chat_messages: {
         Row: {
           id: string
-          session_id: string | null
+          session_id: string | null  // References chat_sessions.session_id
           role: string
           content: string
           metadata: any | null
@@ -84,7 +81,7 @@ export interface Database {
         }
         Insert: {
           id?: string
-          session_id?: string | null
+          session_id?: string | null  // References chat_sessions.session_id
           role: string
           content: string
           metadata?: any | null
@@ -92,7 +89,7 @@ export interface Database {
         }
         Update: {
           id?: string
-          session_id?: string | null
+          session_id?: string | null  // References chat_sessions.session_id
           role?: string
           content?: string
           metadata?: any | null

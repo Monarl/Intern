@@ -13,12 +13,11 @@ export interface ChatMessage {
 }
 
 export interface ChatSession {
-  id: string
-  sessionId: string
+  sessionId: string  // Now the primary key
   chatbotId: string
   userIdentifier?: string
   platform: string
-  status: 'active' | 'ended' | 'transferred'
+  status: 'active' | 'completed' | 'abandoned'
   metadata?: any
   createdAt: string
   updatedAt: string
