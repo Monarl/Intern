@@ -9,6 +9,7 @@ Note:
 + Do not create unneccesary files or folders, just create enough for the task I give you.
 + Everytime you finish coding a file, make sure it is error-free before moving on.
 + Before you code something, use the Brave MCP to fetch the latest documentations and best practices for that task to avoid code deprecations
++ The current node_modules is in admin-dashboard folder so import accordingly
 
 MCP tools:
 + Supabase MCP: Read schema, query to the project, manage Supabase real time, ...
