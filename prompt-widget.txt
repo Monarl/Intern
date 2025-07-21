@@ -1,4 +1,12 @@
-Implement remaining task of task 3.2 and task 3.3 (when click chats in the dashboard from admin-dashboard folder). Read the task in TASKS.md and the current implementation of the widget in task 3.1 and 3.2 in the chat-widget folder and chat-widget/README.md, task 3.3 recommendation in docs/chat-widget-n8n-integration.md so you can apply in your implementation.
+#supabase #brave-search
+Rules:
++ For the frontend components if use shadcn component then download it in terminal.
++ When import, always check the path to make sure the import is correct. 
++ Before moving on to another file, you have to make sure the current file is error-free/.
++ Do not make any unneccesary files and folders.
++ Do not run npm run dev and npm run build to check for errors.
+
+Implement remaining task of task 3.2 and task 3.3 (when click chats in the dashboard from admin-dashboard folder). Read the task in TASKS.md, the current implementation of the widget in task 3.1 and 3.2 in the chat-widget folder and chat-widget/README.md, task 3.3 recommendation in docs/chat-widget-n8n-integration.md so you can apply the widget in your implementation if neccesary.
 
 Use supabase MCP to read the current schema and RLS policies so you can implement appropriately.
 

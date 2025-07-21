@@ -466,7 +466,7 @@ chatbot-enterprise/
   4. **Context Sharing**: Provide conversation history
   5. **Status Management**: Track handoff status
 
-### Task 4.2: Customer Support Interface
+### Task 4.2: Customer Support (Support Agent) Interface
 **Priority: High | Estimated Time: 5 hours**
 
 - [ ] Create CS agent dashboard

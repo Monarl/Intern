@@ -15,6 +15,7 @@ interface SupabaseContextType {
   userRole: UserRole
   isLoading: boolean
   signOut: () => Promise<void>
+  supabase: ReturnType<typeof createBrowserClient>
 }
 
 // Create the context
@@ -116,7 +117,8 @@ export function SupabaseProvider({
     user,
     userRole,
     isLoading,
-    signOut
+    signOut,
+    supabase
   }
 
   return (
