@@ -3,3 +3,4 @@ n8n/
 .vscode/
 .github/
 /node_modules
+replacements.txt
