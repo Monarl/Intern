@@ -151,3 +151,36 @@ body {
     opacity: 0;
   }
 }
+
+/* Chat Widget Scrolling Fixes */
+.chat-widget-backdrop {
+  contain: layout style paint;
+}
+
+.chat-widget-backdrop [data-slot="scroll-area-viewport"] {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(203 213 225) transparent;
+}
+
+.chat-widget-backdrop [data-slot="scroll-area-viewport"]::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-widget-backdrop [data-slot="scroll-area-viewport"]::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-widget-backdrop [data-slot="scroll-area-viewport"]::-webkit-scrollbar-thumb {
+  background-color: rgb(203 213 225);
+  border-radius: 3px;
+}
+
+.chat-widget-backdrop [data-slot="scroll-area-viewport"]::-webkit-scrollbar-thumb:hover {
+  background-color: rgb(148 163 184);
+}
+
+/* Force hardware acceleration for smooth scrolling */
+.chat-widget-backdrop [data-slot="scroll-area-viewport"] {
+  transform: translateZ(0);
+  will-change: scroll-position;
+}

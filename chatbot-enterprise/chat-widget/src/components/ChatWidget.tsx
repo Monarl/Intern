@@ -126,7 +126,9 @@ export function ChatWidget({
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }
   }, [messages])
 
   // Load chat history
@@ -392,81 +394,83 @@ export function ChatWidget({
           </CardHeader>
 
           {!isMinimized && (
-            <CardContent className="flex-1 flex flex-col p-0">
+            <CardContent className="flex-1 flex flex-col p-0 h-full min-h-0">
               {/* Messages */}
-              <ScrollArea className="flex-1 p-4 bg-gradient-to-b from-slate-50/50 to-white">
-                <div className="space-y-4">
-                  {messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={cn(
-                        'flex animate-fadeIn',
-                        message.role === 'user' ? 'justify-end' : 'justify-start'
-                      )}
-                    >
-                      <div className={cn(
-                        'flex items-start space-x-3 max-w-[85%]',
-                        message.role === 'user' ? 'flex-row-reverse space-x-reverse' : 'flex-row'
-                      )}>
-                        {/* Avatar */}
+              <div className="flex-1 min-h-0 relative bg-gradient-to-b from-slate-50/50 to-white">
+                <ScrollArea className="h-full">
+                  <div className="p-4 space-y-4">
+                    {messages.map((message) => (
+                      <div
+                        key={message.id}
+                        className={cn(
+                          'flex animate-fadeIn',
+                          message.role === 'user' ? 'justify-end' : 'justify-start'
+                        )}
+                      >
                         <div className={cn(
-                          'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-1',
-                          message.role === 'user' 
-                            ? 'bg-gradient-to-br from-blue-500 to-blue-600' 
-                            : 'bg-gradient-to-br from-slate-100 to-slate-200 border border-slate-300'
+                          'flex items-start space-x-3 max-w-[85%]',
+                          message.role === 'user' ? 'flex-row-reverse space-x-reverse' : 'flex-row'
                         )}>
-                          {message.role === 'user' ? (
-                            <User size={14} className="text-white" />
-                          ) : (
-                            <Bot size={14} className="text-slate-600" />
-                          )}
-                        </div>
-                        
-                        {/* Message bubble */}
-                        <div
-                          className={cn(
-                            'rounded-2xl px-4 py-3 text-sm shadow-sm max-w-full relative message-bubble',
-                            message.role === 'user'
-                              ? 'text-white rounded-br-md'
-                              : 'bg-white text-slate-800 rounded-bl-md border border-slate-200',
-                            message.metadata?.error && 'bg-red-50 text-red-700 border-red-200'
-                          )}
-                          style={message.role === 'user' ? { 
-                            background: `linear-gradient(135deg, var(--chat-primary-color) 0%, ${appearance.primaryColor || '#3b82f6'}dd 100%)`
-                          } : {}}
-                        >
-                          <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
-                          <p className={cn(
-                            "text-xs mt-2 opacity-70",
-                            message.role === 'user' ? 'text-white/80' : 'text-slate-500'
+                          {/* Avatar */}
+                          <div className={cn(
+                            'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-1',
+                            message.role === 'user' 
+                              ? 'bg-gradient-to-br from-blue-500 to-blue-600' 
+                              : 'bg-gradient-to-br from-slate-100 to-slate-200 border border-slate-300'
                           )}>
-                            {formatTime(message.timestamp)}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {isLoading && (
-                    <div className="flex justify-start animate-fadeIn">
-                      <div className="flex items-start space-x-3">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 border border-slate-300 flex items-center justify-center mt-1">
-                          <Bot size={14} className="text-slate-600" />
-                        </div>
-                        <div className="bg-white rounded-2xl rounded-bl-md px-4 py-3 shadow-sm border border-slate-200 typing-indicator">
-                          <div className="flex space-x-1">
-                            <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></div>
-                            <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                            <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                            {message.role === 'user' ? (
+                              <User size={14} className="text-white" />
+                            ) : (
+                              <Bot size={14} className="text-slate-600" />
+                            )}
+                          </div>
+                          
+                          {/* Message bubble */}
+                          <div
+                            className={cn(
+                              'rounded-2xl px-4 py-3 text-sm shadow-sm max-w-full relative message-bubble',
+                              message.role === 'user'
+                                ? 'text-white rounded-br-md'
+                                : 'bg-white text-slate-800 rounded-bl-md border border-slate-200',
+                              message.metadata?.error && 'bg-red-50 text-red-700 border-red-200'
+                            )}
+                            style={message.role === 'user' ? { 
+                              background: `linear-gradient(135deg, var(--chat-primary-color) 0%, ${appearance.primaryColor || '#3b82f6'}dd 100%)`
+                            } : {}}
+                          >
+                            <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                            <p className={cn(
+                              "text-xs mt-2 opacity-70",
+                              message.role === 'user' ? 'text-white/80' : 'text-slate-500'
+                            )}>
+                              {formatTime(message.timestamp)}
+                            </p>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  )}
-                  
-                  <div ref={messagesEndRef} />
-                </div>
-              </ScrollArea>
+                    ))}
+                    
+                    {isLoading && (
+                      <div className="flex justify-start animate-fadeIn">
+                        <div className="flex items-start space-x-3">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 border border-slate-300 flex items-center justify-center mt-1">
+                            <Bot size={14} className="text-slate-600" />
+                          </div>
+                          <div className="bg-white rounded-2xl rounded-bl-md px-4 py-3 shadow-sm border border-slate-200 typing-indicator">
+                            <div className="flex space-x-1">
+                              <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></div>
+                              <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                              <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div ref={messagesEndRef} />
+                  </div>
+                </ScrollArea>
+              </div>
 
               {/* Error Message */}
               {error && (

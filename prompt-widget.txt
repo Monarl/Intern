@@ -1,3 +1,11 @@
-When i close the chatbox and open it again it say error creating session id. Not creating a new session when only reopen the chat is correct so it shouldn't be showwn as error.
+Implement remaining task of task 3.2 and task 3.3 (when click chats in the dashboard from admin-dashboard folder). Read the task in TASKS.md and the current implementation of the widget in task 3.1 and 3.2 in the chat-widget folder and chat-widget/README.md, task 3.3 recommendation in docs/chat-widget-n8n-integration.md so you can apply in your implementation.
 
-The chatbox when i message is unscrollable so please check the front end code.
+Use supabase MCP to read the current schema and RLS policies so you can implement appropriately.
+
+Use brave MCP so you can fetch the latest documentation before every coding to avoid deprication.
+
+After you implement the admin chat management interface, apply RBAC for roles like Chatbot Manager, Analyst/Reporter and Support Agent so they can only access functionality corresponding to their roles described in Chatbot_DoanhNghiep.md
+
+** Later
+Pass knowledge base so that the chatbot only read documents from those knowledge base only
+Check if first task of task 3.2 is okay
