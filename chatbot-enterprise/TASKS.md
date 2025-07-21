@@ -435,7 +435,7 @@ chatbot-enterprise/
 - Created comprehensive documentation in `docs/chat-widget-n8n-integration.md`
 
 ### Task 3.2: Chat Session Management n8n Workflow
-**Priority: Medium | Estimated Time: 3 hours**
+**Priority: Medium | Estimated Time: 4 hours**
 
 - [x] Create "Chat Session Management" workflow:
   1. **Session Creation**: Initialize new chat sessions
