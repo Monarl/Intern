@@ -204,6 +204,7 @@
           "mode": "list",
           "cachedResultName": "document_chunks"
         },
+        "topK": 10,
         "options": {
           "queryName": "match_documents"
         }
