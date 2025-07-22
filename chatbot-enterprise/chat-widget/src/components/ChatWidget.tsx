@@ -21,6 +21,7 @@ export function ChatWidget({
   position = 'bottom-right',
   welcomeMessage = 'Hello! How can I help you today?'
 }: ChatWidgetConfig) {
+  /* ────────────── state ────────────── */
   const [isOpen, setIsOpen] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -30,34 +31,229 @@ export function ChatWidget({
   const [userIdentifier, setUserIdentifier] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
   
+  /* ────────────── refs ────────────── */
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const supabaseRef = useRef<ReturnType<typeof createSupabaseClient> | null>(null)
   const channelRef = useRef<RealtimeChannel | null>(null)
+  const prevSessionRef = useRef<string | null>(null)
+  const processedIdsRef = useRef<Set<string>>(new Set())
 
-  // Initialize Supabase client
+  /* ────────────── Supabase client ────────────── */
   useEffect(() => {
     if (supabaseUrl && supabaseAnonKey) {
       supabaseRef.current = createSupabaseClient(supabaseUrl, supabaseAnonKey)
     }
   }, [supabaseUrl, supabaseAnonKey])
 
-  // Initialize session
-  useEffect(() => {
-    if (!sessionId) {
-      const newSessionId = generateSessionId()
-      const newUserIdentifier = generateUserIdentifier()
-      setSessionId(newSessionId)
-      setUserIdentifier(newUserIdentifier)
-    }
-  }, [sessionId])
+  /* ────────────── helper: metadata ────────────── */
+  const getSessionMeta = useCallback(async (sid: string) => {
+    if (!supabaseRef.current) return {};
+    
+    const { data, error } = await supabaseRef.current
+      .from('chat_sessions')
+      .select('metadata')
+      .eq('session_id', sid)
+      .single();
+      
+    if (error || !data) return {};
+    return data.metadata || {};
+  }, []);
 
-  // Create chat session in database
+  /* ────────────── mark inactive & purge history ────────────── */
+  const markSessionInactive = useCallback(
+    async (sid: string, reason = 'user_left') => {
+      if (!supabaseRef.current || !sid) return;
+
+      console.log('[ChatWidget] Marking session inactive →', sid);
+
+      try {
+        // 1. Update chat_sessions
+        const meta = await getSessionMeta(sid);
+        const { error: updErr } = await supabaseRef.current
+          .from('chat_sessions')
+          .update({
+            status: 'completed',
+            updated_at: new Date().toISOString(),
+            metadata: {
+              ...meta,
+              session_ended_at: new Date().toISOString(),
+              session_end_reason: reason,
+            },
+          })
+          .eq('session_id', sid);
+
+        if (updErr) console.error('Failed to update chat_sessions:', updErr);
+
+        // 2. Delete n8n_chat_histories
+        const { error: delErr } = await supabaseRef.current
+          .from('n8n_chat_histories')
+          .delete()
+          .eq('session_id', sid);
+
+        if (delErr) console.error('Failed to delete n8n history:', delErr);
+        else console.log('n8n_chat_histories cleared for', sid);
+      } catch (err) {
+        console.error('Session cleanup error:', err);
+      }
+    },
+    [getSessionMeta]
+  );
+
+  /* ────────────── graceful unload (pagehide) ────────────── */
+  useEffect(() => {
+    const handler = () => {
+      if (!sessionId || !supabaseAnonKey) return;
+      
+      try {
+        // Use direct markSessionInactive function if possible
+        if (typeof markSessionInactive === 'function') {
+          markSessionInactive(sessionId, 'browser_closed');
+          return;
+        }
+        
+        // Fallback to direct API call with proper URL format
+        fetch(
+          `${supabaseUrl}/rest/v1/chat_sessions?session_id=eq.${encodeURIComponent(sessionId)}`,
+          {
+            method: 'PATCH',
+            headers: {
+              'apikey': supabaseAnonKey,
+              'Authorization': `Bearer ${supabaseAnonKey}`,
+              'Content-Type': 'application/json',
+              'Prefer': 'return=minimal',
+            },
+            body: JSON.stringify({
+              status: 'completed',
+              updated_at: new Date().toISOString(),
+              metadata: {
+                session_ended_at: new Date().toISOString(),
+                session_end_reason: 'browser_closed',
+              },
+            }),
+            keepalive: true,
+          }
+        );
+      } catch (err) {
+        // We can't log this error because the page is unloading,
+        // but catching to prevent uncaught promise rejections
+      }
+    };
+    
+    // Use pagehide instead of beforeunload for more reliable cleanup
+    window.addEventListener('pagehide', handler);
+    
+    return () => {
+      window.removeEventListener('pagehide', handler);
+      
+      // When component unmounts (user navigates away), mark session inactive
+      if (sessionId) {
+        markSessionInactive(sessionId);
+      }
+    };
+  }, [sessionId, supabaseUrl, supabaseAnonKey, markSessionInactive]);
+
+  /* ────────────── check for and close active sessions ────────────── */
+  const closeActiveSessions = useCallback(async (currentUserId: string) => {
+    if (!supabaseRef.current) return;
+    
+    try {
+      // Find any active sessions for this user
+      const { data, error } = await supabaseRef.current
+        .from('chat_sessions')
+        .select('session_id')
+        .eq('user_identifier', currentUserId)
+        .eq('status', 'active');
+        
+      if (error) {
+        console.error('Error checking for active sessions:', error);
+        return;
+      }
+      
+      // Mark all found sessions as inactive
+      if (data && data.length > 0) {
+        console.log(`Found ${data.length} active sessions to mark as inactive`);
+        
+        for (const session of data) {
+          await markSessionInactive(session.session_id, 'new_session');
+        }
+      }
+    } catch (err) {
+      console.error('Error closing active sessions:', err);
+    }
+  }, [markSessionInactive]);
+
+  /* ────────────── allocate local session id ────────────── */
+  useEffect(() => {
+    const initSession = async () => {
+      if (!sessionId && supabaseRef.current) {
+        try {
+          // Get or create user identifier (could check localStorage first)
+          const newUserIdentifier = generateUserIdentifier();
+          
+          console.log('Generated user identifier:', newUserIdentifier);
+          
+          // Close any existing active sessions for this user
+          if (newUserIdentifier) {
+            await closeActiveSessions(newUserIdentifier);
+          }
+          
+          // Then create a new session
+          const newSessionId = generateSessionId();
+          setSessionId(newSessionId);
+          setUserIdentifier(newUserIdentifier);
+          
+          // Store the new session ID for future reference
+          prevSessionRef.current = newSessionId;
+          console.log('New session initialized:', newSessionId);
+        } catch (err) {
+          console.error('Error initializing session:', err);
+        }
+      }
+    };
+    
+    initSession();
+  }, [sessionId, supabaseRef, closeActiveSessions]);
+
+  /* ────────────── create chat_sessions row (checking first) ────────────── */
   const createChatSession = useCallback(async () => {
-    if (!supabaseRef.current || !sessionId || !userIdentifier) return
+    if (!supabaseRef.current || !sessionId || !userIdentifier) return;
 
     try {
-      const { error } = await supabaseRef.current
+      // First check if the session already exists
+      const { data: existingSession, error: checkError } = await supabaseRef.current
+        .from('chat_sessions')
+        .select('session_id, status')
+        .eq('session_id', sessionId)
+        .maybeSingle(); // Use maybeSingle() instead of single() to avoid 406 errors
+        
+      if (checkError) {
+        console.error('Error checking chat session:', checkError);
+        return;
+      }
+      
+      if (existingSession) {
+        console.log('Session already exists, not creating a new one');
+        
+        // If session exists but is marked as completed, update it to active
+        if (existingSession.status === 'completed') {
+          const { error: updateError } = await supabaseRef.current
+            .from('chat_sessions')
+            .update({ 
+              status: 'active',
+              updated_at: new Date().toISOString()
+            })
+            .eq('session_id', sessionId);
+            
+          if (updateError) {
+            console.error('Error updating existing session to active:', updateError);
+          }
+        }
+        return;
+      }
+      
+      // Create new session if it doesn't exist
+      const { error: insertError } = await supabaseRef.current
         .from('chat_sessions')
         .insert({
           session_id: sessionId,
@@ -67,23 +263,31 @@ export function ChatWidget({
           status: 'active',
           metadata: {
             widget_position: position,
-            user_agent: navigator.userAgent
+            user_agent: navigator.userAgent,
+            created_at: new Date().toISOString()
           }
-        })
+        });
 
-      if (error) {
-        console.error('Error creating chat session:', error)
+      if (insertError) {
+        console.error('Error creating chat session:', insertError);
+      } else {
+        console.log('Chat session created successfully:', sessionId);
       }
     } catch (err) {
-      console.error('Failed to create chat session:', err)
+      console.error('Failed to create chat session:', err);
     }
-  }, [sessionId, userIdentifier, chatbotId, position])
+  }, [sessionId, userIdentifier, chatbotId, platform, position]);
 
-  // Subscribe to real-time message updates
+  /* ────────────── realtime subscription ────────────── */
   useEffect(() => {
-    if (!supabaseRef.current || !sessionId) return
+    if (!supabaseRef.current || !sessionId) return;
 
-    console.log('Setting up real-time subscription for session:', sessionId)
+    console.log('Setting up real-time subscription for session:', sessionId);
+    
+    // Add any existing messages to our processed set
+    messages.forEach(msg => {
+      if (msg.id) processedIdsRef.current.add(msg.id);
+    });
 
     const channel = supabaseRef.current
       .channel(`chat_messages_${sessionId}`)
@@ -96,43 +300,63 @@ export function ChatWidget({
           filter: `session_id=eq.${sessionId}`,
         },
         (payload) => {
-          console.log('Real-time message received:', payload)
-          const newMessage = payload.new as any
+          console.log('Real-time message received:', payload);
+          const newMessage = payload.new as any;
+          
+          // Skip if we've already processed this message
+          if (processedIdsRef.current.has(newMessage.id)) {
+            console.log('Skipping already processed message:', newMessage.id);
+            return;
+          }
+          
+          // Add to processed set
+          processedIdsRef.current.add(newMessage.id);
+          
           if (newMessage.role === 'assistant') {
-            console.log('Adding assistant message from real-time:', newMessage.content)
-            setMessages(prev => [...prev, {
-              id: newMessage.id,
-              role: newMessage.role,
-              content: newMessage.content,
-              timestamp: newMessage.created_at,
-              metadata: { ...newMessage.metadata, source: 'realtime' }
-            }])
-            setIsLoading(false)
+            console.log('Adding assistant message from real-time:', newMessage.content);
+            
+            setMessages(prev => {
+              if (prev.some(msg => msg.id === newMessage.id)) {
+                console.log('Message already in state, skipping:', newMessage.id);
+                return prev;
+              }
+              
+              return [...prev, {
+                id: newMessage.id,
+                role: newMessage.role,
+                content: newMessage.content,
+                timestamp: newMessage.created_at,
+                metadata: { ...newMessage.metadata, source: 'realtime' }
+              }];
+            });
+            setIsLoading(false);
           }
         }
       )
       .subscribe((status) => {
-        console.log('Real-time subscription status:', status)
-      })
+        console.log('Real-time subscription status:', status);
+      });
 
-    channelRef.current = channel
+    channelRef.current = channel;
 
     return () => {
       if (channelRef.current) {
-        console.log('Cleaning up real-time subscription')
-        supabaseRef.current?.removeChannel(channelRef.current)
+        console.log('Cleaning up real-time subscription');
+        supabaseRef.current?.removeChannel(channelRef.current);
       }
-    }
-  }, [sessionId])
+    };
+  }, [sessionId, messages])
+  
 
-  // Auto-scroll to bottom when new messages arrive
+
+  /* ────────────── auto-scroll ────────────── */
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
     }
   }, [messages])
 
-  // Load chat history
+  /* ────────────── load chat history ────────────── */
   const loadChatHistory = useCallback(async () => {
     if (!supabaseRef.current || !sessionId) return
 
@@ -157,15 +381,20 @@ export function ChatWidget({
           metadata: msg.metadata
         }))
         setMessages(formattedMessages)
+        
+        // Add message IDs to processed set
+        data.forEach(msg => processedIdsRef.current.add(msg.id))
       } else {
         // Add welcome message if no history
+        const welcomeId = `welcome_${Date.now()}`
         setMessages([{
-          id: 'welcome',
+          id: welcomeId,
           role: 'assistant',
           content: welcomeMessage,
           timestamp: new Date().toISOString(),
           metadata: { isWelcome: true }
         }])
+        processedIdsRef.current.add(welcomeId)
       }
     } catch (err) {
       console.error('Failed to load chat history:', err)
@@ -173,14 +402,14 @@ export function ChatWidget({
     }
   }, [sessionId, welcomeMessage])
 
-  // Load chat history when session ID is available
+  // Load chat history when session ID is available and widget is open
   useEffect(() => {
     if (sessionId && isOpen) {
       loadChatHistory()
     }
   }, [sessionId, isOpen, loadChatHistory])
 
-  // Handle opening chat
+  /* ────────────── open widget ────────────── */
   const handleOpen = useCallback(async () => {
     setIsOpen(true)
     setIsMinimized(false)
@@ -196,7 +425,7 @@ export function ChatWidget({
     }, 100)
   }, [sessionId, userIdentifier, createChatSession, loadChatHistory])
 
-  // Send message to n8n workflow
+  /* ────────────── send to n8n ────────────── */
   const sendToN8n = useCallback(async (message: string) => {
     if (!n8nWebhookUrl) throw new Error('N8N webhook URL not configured')
 
@@ -206,7 +435,7 @@ export function ChatWidget({
       chatbotId,
       userIdentifier,
       metadata: {
-        platform: 'web',
+        platform,
         timestamp: new Date().toISOString()
       }
     }
@@ -228,15 +457,20 @@ export function ChatWidget({
     const data: N8nChatResponse = await response.json()
     console.log('N8N Response:', data)
     
+    // If there's a messageId in the response, add it to processed IDs
+    if (data.messageId) {
+      processedIdsRef.current.add(data.messageId)
+    }
+    
     return data
-  }, [n8nWebhookUrl, sessionId, chatbotId, userIdentifier])
+  }, [n8nWebhookUrl, sessionId, chatbotId, userIdentifier, platform])
 
-  // Save message to database
+  /* ────────────── save message ────────────── */
   const saveMessage = useCallback(async (role: 'user' | 'assistant', content: string, metadata?: any) => {
     if (!supabaseRef.current || !sessionId) return
 
     try {
-      const { error } = await supabaseRef.current
+      const { data, error } = await supabaseRef.current
         .from('chat_messages')
         .insert({
           session_id: sessionId,
@@ -244,16 +478,22 @@ export function ChatWidget({
           content,
           metadata: metadata || {}
         })
+        .select('id')
+        .single()
 
       if (error) {
         console.error('Error saving message:', error)
+      } else if (data?.id) {
+        // Add the new message ID to the processed set
+        processedIdsRef.current.add(data.id)
+        return data.id
       }
     } catch (err) {
       console.error('Failed to save message:', err)
     }
   }, [sessionId])
 
-  // Handle sending message
+  /* ────────────── handle send message ────────────── */
   const handleSendMessage = useCallback(async () => {
     if (!inputMessage.trim() || isLoading || !sessionId) return
 
@@ -262,32 +502,46 @@ export function ChatWidget({
     setIsLoading(true)
     setError(null)
 
+    // Generate a temporary ID for the user message
+    const tempId = `user_${Date.now()}`
+    
     // Add user message to UI immediately
-    const userMsgObj: ChatMessage = {
-      id: `user_${Date.now()}`,
+    setMessages(prev => [...prev, {
+      id: tempId,
       role: 'user',
       content: userMessage,
       timestamp: new Date().toISOString()
-    }
-    setMessages(prev => [...prev, userMsgObj])
+    }])
 
     try {
-      // Save user message to database
-      await saveMessage('user', userMessage)
-
-      // Send to n8n workflow and get immediate response
+      // Save user message to database and get the real ID
+      const messageId = await saveMessage('user', userMessage)
+      
+      // Send to n8n workflow
       const n8nResponse = await sendToN8n(userMessage)
       
-      // If we get a response, add it immediately and stop loading
+      // If we get a response, add it immediately if not already added via realtime
       if (n8nResponse?.response) {
         console.log('Got immediate response from n8n:', n8nResponse.response)
-        setMessages(prev => [...prev, {
-          id: `assistant_${Date.now()}`,
-          role: 'assistant',
-          content: n8nResponse.response,
-          timestamp: new Date().toISOString(),
-          metadata: { source: 'n8n_direct' }
-        }])
+        
+        // Get the message ID if available from the response
+        const assistantId = n8nResponse.messageId || `assistant_${Date.now()}`
+        
+        // Only add if not already processed (could have come in via realtime)
+        if (!processedIdsRef.current.has(assistantId)) {
+          processedIdsRef.current.add(assistantId)
+          
+          setMessages(prev => [...prev, {
+            id: assistantId,
+            role: 'assistant',
+            content: n8nResponse.response,
+            timestamp: new Date().toISOString(),
+            metadata: { source: 'n8n_direct' }
+          }])
+        } else {
+          console.log('Message already processed, not adding duplicate:', assistantId)
+        }
+        
         setIsLoading(false)
       } else {
         // If no immediate response, wait for real-time or timeout
@@ -296,25 +550,24 @@ export function ChatWidget({
           setError('Response timeout. Please try again.')
         }, 30000) // 30 second timeout
       }
-
     } catch (err) {
       console.error('Error sending message:', err)
       setError('Failed to send message. Please try again.')
       setIsLoading(false)
       
       // Add error message to UI
-      const errorMessage: ChatMessage = {
-        id: `error_${Date.now()}`,
+      const errorId = `error_${Date.now()}`
+      setMessages(prev => [...prev, {
+        id: errorId,
         role: 'assistant',
         content: 'Sorry, I encountered an error. Please try again.',
         timestamp: new Date().toISOString(),
         metadata: { error: true }
-      }
-      setMessages(prev => [...prev, errorMessage])
+      }])
     }
   }, [inputMessage, isLoading, sessionId, saveMessage, sendToN8n])
 
-  // Handle key press
+  /* ────────────── handle key press ────────────── */
   const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
@@ -322,7 +575,7 @@ export function ChatWidget({
     }
   }, [handleSendMessage])
 
-  // Position classes
+  /* ────────────── layout helpers ────────────── */
   const positionClasses = {
     'bottom-right': 'bottom-4 right-4',
     'bottom-left': 'bottom-4 left-4',

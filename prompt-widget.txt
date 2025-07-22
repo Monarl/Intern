@@ -16,4 +16,6 @@ After you implement the admin chat management interface, apply RBAC for roles li
 
 ** Later
 Pass knowledge base so that the chatbot only read documents from those knowledge base only
-Check if first task of task 3.2 is okay
+[x] Make session unactive since the current implementation doesn't have any code to update this.
+[x] Delete unactive session from n8n_chat_history table in supabase.
+Replace placeholder analytic

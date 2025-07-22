@@ -49,6 +49,7 @@ export interface N8nChatRequest {
 export interface N8nChatResponse {
   response: string
   sessionId: string
+  messageId?: string  // Optional ID of the message in database
   metadata?: {
     sources?: string[]
     confidence?: number
