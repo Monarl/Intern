@@ -28,6 +28,7 @@ export interface ChatWidgetConfig {
   supabaseUrl: string
   supabaseAnonKey: string
   n8nWebhookUrl: string
+  platform: string
   appearance?: {
     primaryColor?: string
     fontFamily?: string

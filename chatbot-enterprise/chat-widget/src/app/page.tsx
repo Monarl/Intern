@@ -1,4 +1,5 @@
 import { ChatWidget } from '@/components/ChatWidget'
+import { platform } from 'os'
 
 export default function HomePage() {
   // Demo configuration - in production, these would come from URL params or script configuration
@@ -7,6 +8,7 @@ export default function HomePage() {
     supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL || '',
     supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
     n8nWebhookUrl: process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL || 'http://localhost:5678/webhook/rag-chat',
+    platform: 'web', // Specify the platform for the chat widget
     appearance: {
       primaryColor: '#3b82f6',
       fontFamily: 'system-ui, sans-serif',

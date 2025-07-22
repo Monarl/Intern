@@ -16,6 +16,7 @@ export function ChatWidget({
   supabaseUrl,
   supabaseAnonKey,
   n8nWebhookUrl,
+  platform = 'web',
   appearance = {},
   position = 'bottom-right',
   welcomeMessage = 'Hello! How can I help you today?'
@@ -62,7 +63,7 @@ export function ChatWidget({
           session_id: sessionId,
           chatbot_id: chatbotId,
           user_identifier: userIdentifier,
-          platform: 'web',
+          platform: platform,
           status: 'active',
           metadata: {
             widget_position: position,
