@@ -17,6 +17,7 @@ export function ChatWidget({
   supabaseAnonKey,
   n8nWebhookUrl,
   platform = 'web',
+  knowledgeBaseIds = [],
   appearance = {},
   position = 'bottom-right',
   welcomeMessage = 'Hello! How can I help you today?'
@@ -434,6 +435,7 @@ export function ChatWidget({
       sessionId,
       chatbotId,
       userIdentifier,
+      knowledgeBaseIds,
       metadata: {
         platform,
         timestamp: new Date().toISOString()
@@ -463,7 +465,7 @@ export function ChatWidget({
     }
     
     return data
-  }, [n8nWebhookUrl, sessionId, chatbotId, userIdentifier, platform])
+  }, [n8nWebhookUrl, sessionId, chatbotId, userIdentifier, platform, knowledgeBaseIds])
 
   /* ────────────── save message ────────────── */
   const saveMessage = useCallback(async (role: 'user' | 'assistant', content: string, metadata?: any) => {

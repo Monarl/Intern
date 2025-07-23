@@ -9,6 +9,7 @@ export default function HomePage() {
     supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
     n8nWebhookUrl: process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL || 'http://localhost:5678/webhook/rag-chat',
     platform: 'web', // Specify the platform for the chat widget
+    knowledgeBaseIds: [], // Filter by these knowledge bases
     appearance: {
       primaryColor: '#3b82f6',
       fontFamily: 'system-ui, sans-serif',

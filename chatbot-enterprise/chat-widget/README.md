@@ -53,6 +53,7 @@ function MyApp() {
       supabaseUrl="your-supabase-url"
       supabaseAnonKey="your-supabase-anon-key"
       n8nWebhookUrl="your-n8n-webhook-url"
+      knowledgeBaseIds={["uuid-kb-1", "uuid-kb-2"]}
       position="bottom-right"
       welcomeMessage="Hello! How can I help you today?"
       appearance={{
@@ -73,6 +74,7 @@ window.ChatWidget.init({
   chatbotId: 'your-chatbot-id',
   widgetUrl: 'https://your-chat-widget-domain.com',
   n8nWebhookUrl: 'https://your-n8n-instance.com/webhook/rag-chat',
+  knowledgeBaseIds: ['uuid-kb-1', 'uuid-kb-2'],
   position: 'bottom-right',
   welcomeMessage: 'Hello! How can I help you today?',
   appearance: {
@@ -86,7 +88,7 @@ window.ChatWidget.init({
 
 ```html
 <iframe 
-  src="https://your-chat-widget-domain.com/embed?chatbotId=your-id&n8nWebhookUrl=your-webhook-url"
+  src="https://your-chat-widget-domain.com/embed?chatbotId=your-id&n8nWebhookUrl=your-webhook-url&knowledgeBaseIds=uuid-kb-1,uuid-kb-2"
   width="400" 
   height="600"
   style="position: fixed; bottom: 20px; right: 20px; border: none; z-index: 999999;">
@@ -101,6 +103,7 @@ window.ChatWidget.init({
 | `supabaseUrl` | string | Required | Supabase project URL |
 | `supabaseAnonKey` | string | Required | Supabase anonymous key |
 | `n8nWebhookUrl` | string | Required | n8n webhook endpoint for RAG processing |
+| `knowledgeBaseIds` | string[] | `[]` | Array of knowledge base IDs to filter documents by |
 | `position` | string | `'bottom-right'` | Widget position (`'bottom-right'`, `'bottom-left'`, `'top-right'`, `'top-left'`) |
 | `welcomeMessage` | string | `'Hello! How can I help you today?'` | Initial message shown to users |
 | `appearance.primaryColor` | string | `'#3b82f6'` | Primary color for buttons and user messages |
@@ -146,6 +149,7 @@ The widget sends requests to n8n in this format:
   "sessionId": "session_1642234567890_abc123def",
   "chatbotId": "uuid-of-chatbot",
   "userIdentifier": "user_1642234567890_xyz789",
+  "knowledgeBaseIds": ["uuid-kb-1", "uuid-kb-2"],
   "metadata": {
     "platform": "web",
     "timestamp": "2025-01-18T10:30:00.000Z"

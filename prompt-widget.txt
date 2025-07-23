@@ -19,3 +19,12 @@ Pass knowledge base so that the chatbot only read documents from those knowledge
 [x] Make session unactive since the current implementation doesn't have any code to update this.
 [x] Delete unactive session from n8n_chat_history table in supabase.
 Replace placeholder analytic
+
+I want the chat widget to also accept a list of knowledge base id so that the chatbot only read documents from those knowledge base only. These knowledgeId will be included in the existing json in ChatWidget.tsx line 432 when sent to the n8n so we can filter the data sent to the chat also update the N8nChatRequest in chat.ts to reflect this. 
+
+Read the RAG_Workflow.json so you can understand the n8n workflow
+
+Read the supabase table so you know the list of knowledge base id and select a few for the demoConfig in page.tsx
+
+Update the README in chat-widget to reflect the knowledge base addition in config.
+#supabase 
