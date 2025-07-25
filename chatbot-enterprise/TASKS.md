@@ -1,5 +1,13 @@
 # Enterprise Chatbot System - Initial Tasks
 
+## Bug Fixes and Improvements (Current)
+
+### Bug Fix: ChatbotEdit - primaryColor undefined error
+- [x] Fixed "Cannot read properties of undefined (reading 'primaryColor')" error in edit chatbot page (July 25, 2025)
+- [x] Added null/undefined checks for config.appearance properties
+- [x] Updated updateAppearance function to handle undefined appearance object
+- [x] Fixed TypeScript errors related to duplicate property warnings
+
 ## Prerequisites Setup (Week 1)
 
 ### 0. Project Setup and Guidelines
@@ -482,7 +490,61 @@ chatbot-enterprise/
 - [ ] Test human handoff scenarios
 - [ ] Performance testing and optimization
 
-## Daily Development Tasks
+## Chatbot Management System
+**Priority: High | Estimated Time: 6 hours** ✅ **COMPLETED** (July 25, 2025)
+
+### Task A – Update dashboard navigation
+- [x] In layout.tsx, replace "Documents" nav item with "Chatbots"
+- [x] Link points to `/dashboard/chatbots`
+- [x] Added Bot icon from lucide-react
+- [x] No TypeScript errors in layout file
+
+### Task B – Chatbot management pages (CRUD)
+- [x] Location: `admin-dashboard/app/dashboard/chatbots`
+- [x] Created chatbot role guard component identical to chats RBAC
+- [x] Only roles `super_admin` and `chatbot_manager` can access
+- [x] **List page**: Shows all chatbots with stats (chat count, last activity)
+- [x] **Create page**: Full form with knowledge base selection and widget configuration
+- [x] **Edit page**: Update existing chatbot with all configuration options
+- [x] **Delete functionality**: Confirmation dialog with cascade deletion warning
+
+### Task C – Chatbot creation form
+- [x] Form parameters based on chat-widget README.md configuration:
+  - Basic info: name, description, n8n webhook URL
+  - Knowledge base selection with multi-select checkboxes
+  - Widget configuration: position, welcome message, appearance settings
+  - Color picker for primary color, font family selection
+  - Border radius customization
+- [x] Form validation with required fields and character limits
+- [x] Data stored in Supabase `chatbots` table with proper structure
+- [x] Error handling and success notifications
+
+### Task D – Integrate preview widget
+- [x] Dynamic import of ChatWidget component from `chat-widget` project
+- [x] Live preview on right side of form with real-time updates
+- [x] Preview shows actual widget behavior matching localhost:3001
+- [x] Configuration changes reflected immediately in preview
+- [x] Mockup website background with widget overlay
+- [x] Preview toggle functionality (show/hide)
+- [x] Preview uses actual Supabase credentials for realistic testing
+
+**Implementation Notes:**
+- All TypeScript files are error-free
+- RBAC properly implemented using existing pattern from chats module
+- Supabase integration uses existing chatbots table with proper UUID structure
+- ChatWidget preview integrates seamlessly with real component
+- Form data includes all parameters from chat-widget README specification
+- Preview behavior matches actual widget running on localhost:3001
+- Dynamic imports prevent build issues while maintaining functionality
+- Complete CRUD operations with proper error handling and user feedback
+
+**Files Created/Modified:**
+- `admin-dashboard/app/dashboard/layout.tsx` - Updated navigation
+- `admin-dashboard/components/chatbots/chatbot-role-guard.tsx` - RBAC component
+- `admin-dashboard/app/dashboard/chatbots/page.tsx` - Chatbot listing
+- `admin-dashboard/app/dashboard/chatbots/create/page.tsx` - Creation form with preview
+- `admin-dashboard/app/dashboard/chatbots/[id]/edit/page.tsx` - Edit form with preview
+- Added shadcn/ui components: alert-dialog, select, switch
 
 ### Week 1 Daily Breakdown:
 **Monday**: Development environment setup, Node.js and npm n8n installation

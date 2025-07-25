@@ -15,16 +15,19 @@ Use brave MCP so you can fetch the latest documentation before every coding to a
 After you implement the admin chat management interface, apply RBAC for roles like Chatbot Manager, Analyst/Reporter and Support Agent so they can only access functionality corresponding to their roles described in Chatbot_DoanhNghiep.md
 
 ** Later
-Pass knowledge base so that the chatbot only read documents from those knowledge base only
-[x] Make session unactive since the current implementation doesn't have any code to update this.
-[x] Delete unactive session from n8n_chat_history table in supabase.
-Replace placeholder analytic
+Rules:
++ Check the ui/components for the shadcn components. If you want another components then instlal it using shadcn not shadcn/ui.
++ When import, always check the path to make sure the import is correct. 
++ Before moving on to another file, you have to make sure the current file is error-free.
++ Do not make any unneccesary files and folders.
++ Do not run npm run dev and npm run build to check for errors.
+---
+In the current dashboard layout.tsx there is the options titled Documents. Now i want to replace this with Chatbots for creating, managing and deleting chatbots. The page implemetation will be done in the chatbots folder and integrated the chatbot widget from the chat-widgets folder.
++ This page is only for super admin and chatbot manager so remember to do RBAC. You can reference the RBAC from the chats folder.
++ A chatbot can has the styling, position, knowledge base,... that is listed from the chat-widget README.md configured. Read it and provide an interface to set these parameters when create the chatbot. The default for supabase and n8n related parameter should be set to our current env.local, use the name not the direct api values.
++ The integrated chat widget should work exactly like when i run the chat-widget folder on localhost:3001 to chat using the widget.
 
-I want the chat widget to also accept a list of knowledge base id so that the chatbot only read documents from those knowledge base only. These knowledgeId will be included in the existing json in ChatWidget.tsx line 432 when sent to the n8n so we can filter the data sent to the chat also update the N8nChatRequest in chat.ts to reflect this. 
+Later:
++ How to get the iframe code for embedding. Should have a button to copy the code.
++ Add a preview page to test the iframe 
 
-Read the RAG_Workflow.json so you can understand the n8n workflow
-
-Read the supabase table so you know the list of knowledge base id and select a few for the demoConfig in page.tsx
-
-Update the README in chat-widget to reflect the knowledge base addition in config.
-#supabase 

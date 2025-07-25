@@ -6,13 +6,13 @@ import { usePathname } from 'next/navigation'
 import { useSupabase } from '@/lib/supabase/context'
 import {
   LayoutDashboard,
-  FileText,
   Database,
   Settings,
   MessageSquare,
   LogOut,
   Menu,
   X,
+  Bot,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -43,9 +43,9 @@ const navItems: NavItem[] = [
     icon: <Database className="h-5 w-5" />,
   },
   {
-    title: 'Documents',
-    href: '/dashboard/documents',
-    icon: <FileText className="h-5 w-5" />,
+    title: 'Chatbots',
+    href: '/dashboard/chatbots',
+    icon: <Bot className="h-5 w-5" />,
   },
   {
     title: 'Chats',

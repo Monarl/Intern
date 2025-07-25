@@ -8,6 +8,7 @@ interface EmbedPageProps {
     position?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left'
     welcomeMessage?: string
     appearance?: string
+    knowledgeBaseIds?: string
   }>
 }
 
@@ -18,7 +19,8 @@ async function EmbedPageContent({ searchParams }: EmbedPageProps) {
     n8nWebhookUrl,
     position = 'bottom-right',
     welcomeMessage = 'Hello! How can I help you today?',
-    appearance
+    appearance,
+    knowledgeBaseIds
   } = params
 
   if (!chatbotId || !n8nWebhookUrl) {
@@ -30,6 +32,7 @@ async function EmbedPageContent({ searchParams }: EmbedPageProps) {
   }
 
   const parsedAppearance = appearance ? JSON.parse(decodeURIComponent(appearance)) : {}
+  const parsedKnowledgeBaseIds = knowledgeBaseIds ? knowledgeBaseIds.split(',') : []
 
   return (
     <div className="w-full h-screen bg-transparent">
@@ -38,9 +41,11 @@ async function EmbedPageContent({ searchParams }: EmbedPageProps) {
         supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL || ''}
         supabaseAnonKey={process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''}
         n8nWebhookUrl={n8nWebhookUrl}
+        platform="web"
         position={position}
         welcomeMessage={welcomeMessage}
         appearance={parsedAppearance}
+        knowledgeBaseIds={parsedKnowledgeBaseIds}
       />
     </div>
   )

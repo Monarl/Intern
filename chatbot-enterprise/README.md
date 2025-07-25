@@ -46,8 +46,38 @@ A comprehensive enterprise chatbot system with RAG (Retrieval Augmented Generati
    # Edit .env.local with your credentials
    ```
 
-4. **Start n8n**
+4. **Start all applications**
+   
+   **Option A: Use the automated startup script (recommended)**
    ```bash
+   # Windows
+   dev-start.bat
+   
+   # Linux/Mac
+   chmod +x dev-start.sh
+   ./dev-start.sh
+   ```
+   
+   **Option B: Start manually**
+   ```bash
+   # Terminal 1: Start n8n
+   n8n start
+   
+   # Terminal 2: Start chat widget
+   cd chat-widget
+   npm install
+   npm run dev
+   
+   # Terminal 3: Start admin dashboard  
+   cd admin-dashboard
+   npm install
+   npm run dev
+   ```
+
+5. **Access the applications**
+   - Admin Dashboard: http://localhost:3000
+   - Chat Widget: http://localhost:3001  
+   - n8n Editor: http://localhost:5678
    n8n start
    # Access at http://localhost:5678
    ```
