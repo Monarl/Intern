@@ -2,6 +2,17 @@
 
 ## Bug Fixes and Improvements (Current)
 
+### Bug Fix: Chatbot Deletion Not Working
+- [x] Fixed chatbot deletion functionality that was silently failing (July 28, 2025)
+- [x] **Root Cause**: Missing DELETE RLS policy for chatbots table
+- [x] **Root Cause**: Foreign key constraint with NO ACTION preventing deletion when chat sessions exist
+- [x] **Solution**: Added DELETE RLS policy for Super Admin and Chatbot Manager roles
+- [x] **Solution**: Updated foreign key constraint to CASCADE delete related chat sessions and messages
+- [x] **Database Changes**:
+  - Added policy: "Chatbot managers can delete chatbots" 
+  - Updated constraint: `chat_sessions_optimized_chatbot_id_fkey` with CASCADE delete
+- [x] **Result**: Chatbot deletion now works properly and cleans up related data
+
 ### Enhancement: Chatbot Inactive Status Handling
 - [x] Added chatbot active/inactive status checking functionality (July 28, 2025)
 - [x] Implemented chatbot status validation before opening chat widget
