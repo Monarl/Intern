@@ -20,6 +20,8 @@
     },
     {
       "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"response\": {{$json?.output.toJsonString() }},\n  \"sessionId\": \"{{$('Edit Fields').item.json.sessionId}}\"\n}\n",
         "options": {}
       },
       "id": "ec8f4116-b80f-4267-9140-8e72017cdbe0",
@@ -28,7 +30,7 @@
       "typeVersion": 1.1,
       "position": [
         -280,
-        100
+        60
       ]
     },
     {
@@ -38,7 +40,7 @@
             {
               "id": "9a9a245e-f1a1-4282-bb02-a81ffe629f0f",
               "name": "chatInput",
-              "value": "={{ $json?.chatInput || $json.body.chatInput }}",
+              "value": "={{ $json?.chatInput || $json.body.message }}",
               "type": "string"
             },
             {
@@ -46,6 +48,12 @@
               "name": "sessionId",
               "value": "={{ $json?.sessionId || $json.body.sessionId}}",
               "type": "string"
+            },
+            {
+              "id": "de86ec4c-de7a-4570-9b35-87cf54e1c353",
+              "name": "knowledgeId",
+              "value": "={{ [\"90e0570c-dbd9-45d0-b48b-78bf40b7b9f4\",\"547a979a-efed-41ad-b842-70623216bbf7\"] || $json.body.knowledgeId }}",
+              "type": "array"
             }
           ]
         },
@@ -78,7 +86,7 @@
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "chatbot",
+        "path": "rag-chat",
         "responseMode": "responseNode",
         "options": {}
       },
@@ -97,7 +105,7 @@
         "promptType": "define",
         "text": "={{ $json.chatinput }}",
         "options": {
-          "systemMessage": "=You are a personal assistant who helps answer questions from a corpus of documents. The documents are either text based (Txt, docs, extracted PDFs, etc.) or tabular data (CSVs or Excel documents).\n\nWhen searching for information, focus on these extracted keywords from the user's question:\n{{ $('Code').item.json.keywords.join(', ') }}\n\nThese key phrases may also be relevant:\n{{ $('Code').item.json.phrases.join(', ') }}\n\nYou are given tools to perform RAG in the 'document_chunks' table, look up the documents available in your knowledge base in the 'document' table, extract all the text from a given document, and query the tabular files with SQL in the 'document_rows' table.\n\nAlways start by performing RAG unless the question requires a SQL query for tabular data (fetching a sum, finding a max, something a RAG lookup would be unreliable for). If RAG doesn't help, then look at the documents that are available to you, find a few that you think would contain the answer, and then analyze those.\n\nAlways tell the user if you didn't find the answer. Don't make something up just to please them."
+          "systemMessage": "=You are a personal assistant who helps answer questions from a corpus of documents. The documents are either text based (Txt, docs, extracted PDFs, etc.) or tabular data (CSVs or Excel documents).\n\nWhen searching for information, focus on these extracted keywords from the user's question:\n{{ $('Code').item.json.keywords.join(', ') }}\n\nThese key phrases may also be relevant:\n{{ $('Code').item.json.phrases.join(', ') }}\n\nYou are given tools to perform RAG in the 'document_chunks' table, look up the documents available in your knowledge base in the 'document' table, extract all the text from a given document, and query the tabular files with SQL in the 'document_rows' table.\n\nAlways start by performing RAG unless the question requires a SQL query for tabular data (fetching a sum, finding a max, something a RAG lookup would be unreliable for) or the user ask to search for the whole document content. If RAG doesn't help, then look at the documents that are available to you, find a few that you think would contain the answer, and then analyze those.\n\nAlways tell the user if you didn't find the answer. Don't make something up just to please them."
         }
       },
       "id": "f546ae46-290f-4ded-a965-4cb02620d617",
@@ -105,7 +113,7 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.6,
       "position": [
-        -620,
+        -600,
         100
       ]
     },
@@ -113,20 +121,11 @@
       "parameters": {
         "descriptionType": "manual",
         "toolDescription": "Use this tool to fetch all available documents, including the table schema if the file is a CSV or Excel file.",
-        "operation": "select",
-        "schema": {
-          "__rl": true,
-          "mode": "list",
-          "value": "public"
-        },
-        "table": {
-          "__rl": true,
-          "value": "documents",
-          "mode": "list",
-          "cachedResultName": "documents"
-        },
-        "returnAll": true,
-        "options": {}
+        "operation": "executeQuery",
+        "query": "SELECT id, title, knowledge_base_id\nFROM   documents\nWHERE  knowledge_base_id IN (\n  SELECT value::uuid                       -- each element becomes one row\n  FROM   jsonb_array_elements_text($1::jsonb)\n);\n",
+        "options": {
+          "queryReplacement": "={{ $('Edit Fields').item.json.knowledgeId }}\n"
+        }
       },
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.5,
@@ -161,12 +160,15 @@
       ],
       "id": "72cfde60-750a-4c71-8129-94b576ee017a",
       "name": "Get File Contents",
+      "retryOnFail": true,
+      "waitBetweenTries": 500,
       "credentials": {
         "postgres": {
           "id": "5LPqoPG4p0V8EFcd",
           "name": "Postgres account"
         }
-      }
+      },
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -202,8 +204,17 @@
           "mode": "list",
           "cachedResultName": "document_chunks"
         },
+        "topK": 10,
         "options": {
-          "queryName": "match_documents"
+          "queryName": "match_documents",
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "knowledge_id",
+                "value": "={{ $('Edit Fields').item.json.knowledgeId }}"
+              }
+            ]
+          }
         }
       },
       "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
@@ -272,6 +283,41 @@
       ],
       "id": "6c60c0e8-5b59-4bc2-9f0c-4be4fcc5ba8f",
       "name": "Code"
+    },
+    {
+      "parameters": {
+        "tableId": "chat_messages",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "session_id",
+              "fieldValue": "={{ $('Edit Fields').item.json.sessionId }}"
+            },
+            {
+              "fieldId": "role",
+              "fieldValue": "assistant"
+            },
+            {
+              "fieldId": "content",
+              "fieldValue": "={{ $('RAG AI Agent').item.json.output }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -280,
+        -120
+      ],
+      "id": "b01bdc17-e625-45b0-af53-ee8efc7891a7",
+      "name": "Supabase",
+      "credentials": {
+        "supabaseApi": {
+          "id": "CAivPbO134UFXAZV",
+          "name": "Supabase account"
+        }
+      }
     }
   ],
   "connections": {
@@ -284,6 +330,11 @@
             "index": 0
           }
         ]
+      ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        []
       ]
     },
     "Edit Fields": {
@@ -324,6 +375,11 @@
         [
           {
             "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Supabase",
             "type": "main",
             "index": 0
           }

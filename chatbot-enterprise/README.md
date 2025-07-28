@@ -40,16 +40,34 @@ A comprehensive enterprise chatbot system with RAG (Retrieval Augmented Generati
    npm install n8n -g
    ```
 
-3. **Set up environment variables**
+3. **Set up environment variables in admin-dashboard and chat-widget**
    ```bash
    cp .env.example .env.local
    # Edit .env.local with your credentials
    ```
 
-4. **Start n8n**
+4. **Start all applications**
+   
    ```bash
+   # Terminal 1: Start n8n
    n8n start
-   # Access at http://localhost:5678
+   
+   # Terminal 2: Start chat widget
+   cd chat-widget
+   npm install
+   npm run dev
+   
+   # Terminal 3: Start admin dashboard  
+   cd admin-dashboard
+   npm install
+   npm run dev
+   ```
+
+5. **Access the applications**
+   - Admin Dashboard: http://localhost:3000
+   - Chat Widget: http://localhost:3001  
+   - n8n Editor: http://localhost:5678
+   n8n start
    ```
 
 ## 📊 Database Schema
@@ -70,6 +88,9 @@ The system uses Supabase PostgreSQL with the following core tables:
 - **Row Level Security**: Enabled on all tables
 - **Cascade Deletes**: Maintain data integrity
 - **JSONB Metadata**: Flexible schema extension
+- **Embed Integration**: Ready-to-use iframe and JavaScript embed codes
+- **Live Preview**: Test chatbot integration with device simulation
+- **Real-time Chat**: Supabase Realtime for instant message delivery
 
 ## 🔧 Project Structure
 
@@ -96,24 +117,6 @@ The system follows an n8n-first approach with these core workflows:
 4. **Facebook Integration**: Social media automation
 5. **Human Handoff**: Escalation to support agents
 
-## 🧪 Testing
-
-### Database Tests
-Run database validation tests:
-```bash
-# Execute test suite in Supabase SQL Editor
-tests/database/test_supabase_setup.sql
-```
-
-### Test Results
-✅ **All core database tests passed:**
-- pgvector extension enabled (v0.8.0)
-- All tables created with proper schema
-- Row Level Security enabled
-- Vector similarity search index created
-- Foreign key constraints working
-- CASCADE delete operations verified
-
 ## 🔐 Security & Access Control
 
 ### Row Level Security (RLS)
@@ -133,13 +136,9 @@ All database tables have comprehensive RLS policies:
 - User roles: Super Admin exclusive management
 
 ### Vector Search Functions
-The system includes three specialized functions for RAG functionality:
+The system includes a specialized function for RAG functionality:
 
-1. **`match_document_chunks()`**: Pure vector similarity search
-2. **`hybrid_search_chunks()`**: Combined vector + text search (70% vector, 30% text)
-3. **`get_chunk_context()`**: Retrieve surrounding chunks for better context
-
-All functions respect RLS policies and support knowledge base filtering.
+**`match_documents`**: Pure vector similarity search
 
 ## Admin Dashboard
 
@@ -149,37 +148,10 @@ All functions respect RLS policies and support knowledge base filtering.
 - **Protected Routes**: Dashboard routes protected via middleware
 - **Modern UI**: Built with shadcn/ui components using slate theme
 - **Fully Typed**: TypeScript for improved developer experience
-
-### Environment Variables
-Create a `.env.local` file with the following variables:
-```bash
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
-```
-
-### Getting Started
-
-1. **Navigate to the admin-dashboard directory**
-   ```bash
-   cd chatbot-enterprise/admin-dashboard
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   # or
-   yarn install
-   ```
-
-3. **Run the development server**
-   ```bash
-   npm run dev
-   # or
-   yarn dev
-   ```
-
-4. **Open [http://localhost:3000](http://localhost:3000)** with your browser.
+- **Chatbot Management**: Create, configure, and manage chatbots
+- **Embed Code Generation**: Ready-to-use iframe and JavaScript embed codes
+- **Live Preview**: Test chatbot integration with device simulation
+- **Knowledge Base Integration**: Link chatbots to specific knowledge bases
 
 ### Project Structure
 ```
@@ -251,6 +223,16 @@ For detailed API documentation, see [Knowledge Base API](./docs/knowledge-base-a
 Knowledge Base actions trigger n8n workflows via webhooks:
 - `/webhook/upload-doc` - Process uploaded documents
 - `/webhook/upload-url` - Extract content from URLs and sitemaps
+
+## Chat Widget Embedding
+
+The chat widget can be embedded into any website using iframe or JavaScript integration methods.
+
+### Admin Dashboard Features
+- **One-Click Copy**: Generate and copy embed codes directly from the admin dashboard
+- **Live Preview**: Test your chatbot integration with device simulation (desktop, tablet, mobile)
+- **Custom Configuration**: Configure chatbot settings and appearance
+- **Multiple Integration Methods**: Choose between iframe and JavaScript embedding
 
 ## 🤝 Contributing
 

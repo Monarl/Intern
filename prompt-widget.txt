@@ -1,14 +1,33 @@
-Read phase 3 Basic Chatbot Interface and do the following task:
-+ Implement the tasks in task 3.1 Chat Widget Develeopment using the various MCP tools list below
-+ Use Supabase MCP to read the current schema and add only neccessary table for the whole phase 3 (For example: chat-message, chat-sessions, ...), do not create too many tables.
-+ Read the RAG_Workflow.json to see the current RAG workflow for the chatbot. Then give me a markdown file for the json that the frontend from 3.1 you implemented will send to n8n and the output that the code expect n8n to return. Also document the extra task that you want n8n to do (For example: Insert user, bot message to supabase tables; Return the sessionId for the frontend; ...)
-+ Read Chatbot_DoanhNghiep.md to make sure your implementation is inline with the project description.
+** Later
+Rules:
++ Check the ui/components for the shadcn components. If you want another components then instlal it using shadcn not shadcn/ui.
++ When import, always check the path to make sure the import is correct. 
++ Before moving on to another file, you have to make sure the current file is error-free.
++ Do not make any unneccesary files and folders.
++ Do not run npm run dev and npm run build to check for errors.
+---
+In the current dashboard layout.tsx there is the options titled Documents. Now i want to replace this with Chatbots for creating, managing and deleting chatbots. The page implemetation will be done in the chatbots folder and integrated the chatbot widget from the chat-widgets folder.
++ This page is only for super admin and chatbot manager so remember to do RBAC. You can reference the RBAC from the chats folder.
++ A chatbot can has the styling, position, knowledge base,... that is listed from the chat-widget README.md configured. Read it and provide an interface to set these parameters when create the chatbot. The default for supabase and n8n related parameter should be set to our current env.local, use the name not the direct api values.
++ The integrated chat widget should work exactly like when i run the chat-widget folder on localhost:3001 to chat using the widget.
 
-Note:
-+ Do not create unneccesary files or folders, just create enough for the task I give you.
-+ Everytime you finish coding a file, make sure it is error-free before moving on.
-+ Before you code something, use the Brave MCP to fetch the latest documentations and best practices for that task to avoid code deprecations
+Later:
+### Coding Rules (apply to all changes)
+1. Use only shadcn components in ui/components; if a component is missing, install it with `shadcn add`, **not** `@shadcn/ui`.
+2. Always confirm import paths are correct.
+3. Finish one file without TypeScript errors before editing the next.
+4. Do not create unnecessary files or folders.
+5. Do not run `npm run dev` or `npm run build`.
++ How to get the iframe code for embedding. Should have a button to copy the code.
++ Add a simple preview page that i can delete later and add the iframe to test if it works
++ Add preview md to main md.
++ Implement task 4.2 in TASKS.md:
+    - Build on the exisiting chat dashboard with specialized UI for Support Agent.
+    - Add manual switch to human handoff so users can request for CS.
+    - Give a readme to explain your implementation and what the n8n needs to do in your implementation so i can implement task 4.1 in TASKS.md
+    - Project requirements for reference:
+        + **Kích hoạt thủ công**: Người dùng có thể yêu cầu chuyển cuộc trò chuyện sang nhân viên hỗ trợ khách hàng (CS) bất cứ lúc nào.
+        + **Giao diện CS**: Cung cấp một giao diện riêng cho nhân viên CS để tiếp nhận các cuộc trò chuyện được chuyển giao, xem lịch sử chat trước đó và tương tác trực tiếp với khách hàng.
+        + **Thông báo**: Gửi thông báo đến nhân viên CS khi có cuộc trò chuyện cần được tiếp quản.
+        + **Chuyển giao lại bot**: Sau khi nhân viên CS hoàn tất hỗ trợ, họ có thể chuyển cuộc trò chuyện trở lại cho chatbot nếu phù hợp.
 
-MCP tools:
-+ Supabase MCP: Read schema, query to the project, manage Supabase real time, ...
-+ Brave MCP: Search for latest documentations

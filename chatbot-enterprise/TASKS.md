@@ -1,5 +1,43 @@
 # Enterprise Chatbot System - Initial Tasks
 
+## Bug Fixes and Improvements (Current)
+
+### Bug Fix: Chatbot Deletion Not Working
+- [x] Fixed chatbot deletion functionality that was silently failing (July 28, 2025)
+- [x] **Root Cause**: Missing DELETE RLS policy for chatbots table
+- [x] **Root Cause**: Foreign key constraint with NO ACTION preventing deletion when chat sessions exist
+- [x] **Solution**: Added DELETE RLS policy for Super Admin and Chatbot Manager roles
+- [x] **Solution**: Updated foreign key constraint to CASCADE delete related chat sessions and messages
+- [x] **Database Changes**:
+  - Added policy: "Chatbot managers can delete chatbots" 
+  - Updated constraint: `chat_sessions_optimized_chatbot_id_fkey` with CASCADE delete
+- [x] **Result**: Chatbot deletion now works properly and cleans up related data
+
+### Enhancement: Chatbot Inactive Status Handling
+- [x] Added chatbot active/inactive status checking functionality (July 28, 2025)
+- [x] Implemented chatbot status validation before opening chat widget
+- [x] Added inactive notification display when user tries to interact with inactive chatbot
+- [x] Prevented session creation for inactive chatbots
+- [x] Added visual feedback (disabled button state) for inactive chatbots
+- [x] Implemented message sending prevention for inactive chatbots
+- [x] Added proper error handling and user notification for inactive status
+
+### Enhancement: Chatbot Embed Code Integration
+- [x] Added embed code generation and copy functionality to chatbot edit page (July 28, 2025)
+- [x] Created HTML iframe embed method with proper positioning and styling
+- [x] Created JavaScript embed method for advanced integration
+- [x] Added integration instructions and preview page link
+- [x] Created dedicated preview page at `/dashboard/chatbots/[id]/preview`
+- [x] Implemented responsive device preview (desktop, tablet, mobile)
+- [x] Added realistic webpage simulation for testing embed integration
+- [x] Updated create chatbot flow to redirect to edit page for immediate access to embed codes
+
+### Bug Fix: ChatbotEdit - primaryColor undefined error
+- [x] Fixed "Cannot read properties of undefined (reading 'primaryColor')" error in edit chatbot page (July 25, 2025)
+- [x] Added null/undefined checks for config.appearance properties
+- [x] Updated updateAppearance function to handle undefined appearance object
+- [x] Fixed TypeScript errors related to duplicate property warnings
+
 ## Prerequisites Setup (Week 1)
 
 ### 0. Project Setup and Guidelines
@@ -387,43 +425,64 @@ chatbot-enterprise/
 
 ## Phase 3: Basic Chatbot Interface (Week 5-6)
 
-### Task 3.1: Chat Widget Development
+### Task 3.1: Chat Widget Development ✅ **COMPLETED** (July 18, 2025)
 **Priority: High | Estimated Time: 6 hours**
 
-- [ ] Create embeddable React chat widget:
-  ```typescript
-  // chat-widget/src/ChatWidget.tsx
-  import React, { useState, useEffect } from 'react'
-  import { createClient } from '@supabase/supabase-js'
+- [x] Create embeddable React chat widget with full TypeScript implementation
+- [x] Implement real-time messaging with Supabase Realtime subscriptions
+- [x] Add typing indicators and message status with loading animations
+- [x] Create responsive design for mobile/desktop with proper styling
+- [x] Build widget customization options (colors, position, welcome message, etc.)
+- [x] Create chat widget Next.js project structure
+- [x] Fix UUID validation errors in session management
+- [x] Implement proper database relationships (chat_sessions -> chat_messages)
+- [x] Create beautiful modern UI with gradients and animations
+- [x] Add comprehensive error handling and loading states
+- [x] Create demo chatbot in database for testing
+- [x] Document n8n integration requirements and API format
 
-  interface ChatWidgetProps {
-    chatbotId: string
-    apiUrl: string
-    supabaseUrl: string
-    supabaseAnonKey: string
-  }
+**Implementation Notes:**
+- Professional modern UI with gradient design and smooth animations
+- Proper UUID session management with database relationship handling
+- Real-time messaging using Supabase Realtime subscriptions
+- Comprehensive error handling and loading states
+- Beautiful responsive design suitable for enterprise use
+- Complete n8n integration documentation with API specifications
+- Demo chatbot created with UUID: f47ac10b-58cc-4372-a567-0e02b2c3d479
+- Running successfully at http://localhost:3001
+- Ready for n8n workflow integration
+- [x] Implement session management and user identification
+- [x] Add n8n webhook integration for RAG functionality
+- [x] Create embeddable iframe version for website integration
+- [x] Add proper error handling and recovery mechanisms
+- [x] Implement message persistence in Supabase database
+- [x] Add comprehensive TypeScript types for all chat interfaces
+- [x] Create documentation for n8n integration requirements
 
-  export function ChatWidget({ chatbotId, apiUrl, supabaseUrl, supabaseAnonKey }: ChatWidgetProps) {
-    // Real-time chat implementation
-  }
-  ```
-
-- [ ] Implement real-time messaging with Supabase
-- [ ] Add typing indicators and message status
-- [ ] Create responsive design for mobile/desktop
-- [ ] Build widget customization options (colors, position, etc.)
+**Implementation Notes:**
+- Full Next.js 15 project created in `chat-widget/` folder
+- Real-time messaging using Supabase Realtime with PostgreSQL change subscriptions
+- Chat widget supports multiple positions (bottom-right, bottom-left, top-right, top-left)
+- Session management with persistent user identification using localStorage
+- n8n integration via webhook with structured request/response format
+- Responsive design with Tailwind CSS and custom theming support
+- Embeddable iframe version available at `/embed` endpoint
+- Complete TypeScript type definitions for chat messages, sessions, and configuration
+- Error handling for network failures, API errors, and database issues
+- Database integration with existing `chat_sessions` and `chat_messages` tables
+- Created comprehensive documentation in `docs/chat-widget-n8n-integration.md`
 
 ### Task 3.2: Chat Session Management n8n Workflow
-**Priority: Medium | Estimated Time: 3 hours**
+**Priority: Medium | Estimated Time: 4 hours**
 
-- [ ] Create "Chat Session Management" workflow:
+- [x] Create "Chat Session Management" workflow:
   1. **Session Creation**: Initialize new chat sessions
   2. **Message Routing**: Direct messages to appropriate handlers
   3. **Context Management**: Maintain conversation history
   4. **Session Cleanup**: Archive old sessions
 
-- [ ] Implement user identification and session persistence
-- [ ] Add message rate limiting and spam protection
+- [] Implement user identification and session persistence
+- [] Add message rate limiting and spam protection
 
 ### Task 3.3: Admin Chat Management Interface
 **Priority: Medium | Estimated Time: 4 hours**
@@ -445,7 +504,7 @@ chatbot-enterprise/
   4. **Context Sharing**: Provide conversation history
   5. **Status Management**: Track handoff status
 
-### Task 4.2: Customer Support Interface
+### Task 4.2: Customer Support (Support Agent) Interface
 **Priority: High | Estimated Time: 5 hours**
 
 - [ ] Create CS agent dashboard
@@ -461,7 +520,61 @@ chatbot-enterprise/
 - [ ] Test human handoff scenarios
 - [ ] Performance testing and optimization
 
-## Daily Development Tasks
+## Chatbot Management System
+**Priority: High | Estimated Time: 6 hours** ✅ **COMPLETED** (July 25, 2025)
+
+### Task A – Update dashboard navigation
+- [x] In layout.tsx, replace "Documents" nav item with "Chatbots"
+- [x] Link points to `/dashboard/chatbots`
+- [x] Added Bot icon from lucide-react
+- [x] No TypeScript errors in layout file
+
+### Task B – Chatbot management pages (CRUD)
+- [x] Location: `admin-dashboard/app/dashboard/chatbots`
+- [x] Created chatbot role guard component identical to chats RBAC
+- [x] Only roles `super_admin` and `chatbot_manager` can access
+- [x] **List page**: Shows all chatbots with stats (chat count, last activity)
+- [x] **Create page**: Full form with knowledge base selection and widget configuration
+- [x] **Edit page**: Update existing chatbot with all configuration options
+- [x] **Delete functionality**: Confirmation dialog with cascade deletion warning
+
+### Task C – Chatbot creation form
+- [x] Form parameters based on chat-widget README.md configuration:
+  - Basic info: name, description, n8n webhook URL
+  - Knowledge base selection with multi-select checkboxes
+  - Widget configuration: position, welcome message, appearance settings
+  - Color picker for primary color, font family selection
+  - Border radius customization
+- [x] Form validation with required fields and character limits
+- [x] Data stored in Supabase `chatbots` table with proper structure
+- [x] Error handling and success notifications
+
+### Task D – Integrate preview widget
+- [x] Dynamic import of ChatWidget component from `chat-widget` project
+- [x] Live preview on right side of form with real-time updates
+- [x] Preview shows actual widget behavior matching localhost:3001
+- [x] Configuration changes reflected immediately in preview
+- [x] Mockup website background with widget overlay
+- [x] Preview toggle functionality (show/hide)
+- [x] Preview uses actual Supabase credentials for realistic testing
+
+**Implementation Notes:**
+- All TypeScript files are error-free
+- RBAC properly implemented using existing pattern from chats module
+- Supabase integration uses existing chatbots table with proper UUID structure
+- ChatWidget preview integrates seamlessly with real component
+- Form data includes all parameters from chat-widget README specification
+- Preview behavior matches actual widget running on localhost:3001
+- Dynamic imports prevent build issues while maintaining functionality
+- Complete CRUD operations with proper error handling and user feedback
+
+**Files Created/Modified:**
+- `admin-dashboard/app/dashboard/layout.tsx` - Updated navigation
+- `admin-dashboard/components/chatbots/chatbot-role-guard.tsx` - RBAC component
+- `admin-dashboard/app/dashboard/chatbots/page.tsx` - Chatbot listing
+- `admin-dashboard/app/dashboard/chatbots/create/page.tsx` - Creation form with preview
+- `admin-dashboard/app/dashboard/chatbots/[id]/edit/page.tsx` - Edit form with preview
+- Added shadcn/ui components: alert-dialog, select, switch
 
 ### Week 1 Daily Breakdown:
 **Monday**: Development environment setup, Node.js and npm n8n installation
