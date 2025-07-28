@@ -2,6 +2,16 @@
 
 ## Bug Fixes and Improvements (Current)
 
+### Enhancement: Chatbot Embed Code Integration
+- [x] Added embed code generation and copy functionality to chatbot edit page (July 28, 2025)
+- [x] Created HTML iframe embed method with proper positioning and styling
+- [x] Created JavaScript embed method for advanced integration
+- [x] Added integration instructions and preview page link
+- [x] Created dedicated preview page at `/dashboard/chatbots/[id]/preview`
+- [x] Implemented responsive device preview (desktop, tablet, mobile)
+- [x] Added realistic webpage simulation for testing embed integration
+- [x] Updated create chatbot flow to redirect to edit page for immediate access to embed codes
+
 ### Bug Fix: ChatbotEdit - primaryColor undefined error
 - [x] Fixed "Cannot read properties of undefined (reading 'primaryColor')" error in edit chatbot page (July 25, 2025)
 - [x] Added null/undefined checks for config.appearance properties

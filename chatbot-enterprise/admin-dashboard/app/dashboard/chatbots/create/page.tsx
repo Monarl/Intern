@@ -130,7 +130,7 @@ export default function CreateChatbotPage() {
     try {
       setLoading(true)
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('chatbots')
         .insert({
           name: name.trim(),
@@ -151,7 +151,7 @@ export default function CreateChatbotPage() {
       }
 
       toast.success('Chatbot created successfully!')
-      router.push('/dashboard/chatbots')
+      router.push(`/dashboard/chatbots/${data.id}/edit`)
     } catch (error) {
       console.error('Error creating chatbot:', error)
       toast.error('Failed to create chatbot')

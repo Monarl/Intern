@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ArrowLeft, X, Eye, EyeOff } from 'lucide-react'
+import { ArrowLeft, X, Eye, EyeOff, Copy, Code, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { ChatWidgetPreview } from '@/components/chatbots/ChatWidgetPreview'
@@ -217,6 +217,88 @@ export default function EditChatbotPage() {
       toast.error('Failed to update chatbot')
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Generate embed code functions
+  const generateIframeCode = () => {
+    const chatWidgetUrl = process.env.NEXT_PUBLIC_CHAT_WIDGET_URL || 'http://localhost:3001'
+    const embedUrl = new URL('/embed', chatWidgetUrl)
+    embedUrl.searchParams.set('chatbotId', chatbotId)
+    embedUrl.searchParams.set('n8nWebhookUrl', n8nWebhookUrl)
+    embedUrl.searchParams.set('position', config.position)
+    embedUrl.searchParams.set('welcomeMessage', config.welcomeMessage)
+    if (selectedKnowledgeBases.length > 0) {
+      embedUrl.searchParams.set('knowledgeBaseIds', selectedKnowledgeBases.join(','))
+    }
+    embedUrl.searchParams.set('appearance', encodeURIComponent(JSON.stringify(config.appearance)))
+
+    return `<iframe 
+  src="${embedUrl.toString()}"
+  width="400" 
+  height="600"
+  style="position: fixed; ${config.position?.includes('right') ? 'right: 20px;' : 'left: 20px;'} ${config.position?.includes('bottom') ? 'bottom: 20px;' : 'top: 20px;'} border: none; z-index: 999999; border-radius: ${config.appearance?.borderRadius || '12px'};"
+  title="${name} Chat Widget">
+</iframe>`
+  }
+
+  const generateScriptCode = () => {
+    const chatWidgetUrl = process.env.NEXT_PUBLIC_CHAT_WIDGET_URL || 'http://localhost:3001'
+    return `<script>
+(function() {
+  window.ChatWidget = window.ChatWidget || {};
+  window.ChatWidget.init = function(config) {
+    const iframe = document.createElement('iframe');
+    iframe.src = config.widgetUrl + '/embed?' + new URLSearchParams({
+      chatbotId: config.chatbotId,
+      n8nWebhookUrl: config.n8nWebhookUrl,
+      position: config.position || 'bottom-right',
+      welcomeMessage: config.welcomeMessage || 'Hello! How can I help you today?',
+      knowledgeBaseIds: (config.knowledgeBaseIds || []).join(','),
+      appearance: JSON.stringify(config.appearance || {})
+    }).toString();
+    
+    iframe.style.cssText = \`
+      position: fixed;
+      \${config.position?.includes('right') ? 'right: 20px;' : 'left: 20px;'}
+      \${config.position?.includes('bottom') ? 'bottom: 20px;' : 'top: 20px;'}
+      width: 400px;
+      height: 600px;
+      border: none;
+      z-index: 999999;
+      border-radius: \${config.appearance?.borderRadius || '12px'};
+    \`;
+    
+    document.body.appendChild(iframe);
+    return function() { iframe.remove(); };
+  };
+  
+  // Auto-initialize if config is provided
+  if (window.ChatWidgetConfig) {
+    window.ChatWidget.init(window.ChatWidgetConfig);
+  }
+})();
+
+// Configuration for this chatbot
+window.ChatWidgetConfig = {
+  chatbotId: '${chatbotId}',
+  widgetUrl: '${chatWidgetUrl}',
+  n8nWebhookUrl: '${n8nWebhookUrl}',
+  position: '${config.position}',
+  welcomeMessage: '${config.welcomeMessage}',
+  knowledgeBaseIds: [${selectedKnowledgeBases.map(id => `'${id}'`).join(', ')}],
+  appearance: ${JSON.stringify(config.appearance, null, 2)}
+};
+</script>`
+  }
+
+  const copyToClipboard = async (text: string, type: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      toast.success(`${type} code copied to clipboard!`)
+    } catch (error) {
+      console.error('Failed to copy:', error)
+      toast.error(`Failed to copy ${type} code`)
     }
   }
 
@@ -567,6 +649,106 @@ export default function EditChatbotPage() {
                     Preview hidden
                   </div>
                 )}
+              </CardContent>
+            </Card>
+
+            {/* Embed Code */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Code className="h-5 w-5" />
+                  Embed Code
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Copy the embed code to integrate this chatbot into your website
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Iframe Method */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="font-medium">HTML iframe (Recommended)</Label>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => copyToClipboard(generateIframeCode(), 'iframe')}
+                      className="h-8"
+                    >
+                      <Copy className="h-3 w-3 mr-1" />
+                      Copy
+                    </Button>
+                  </div>
+                  <div className="relative">
+                    <pre className="bg-slate-100 p-3 rounded-md text-xs overflow-x-auto border">
+                      <code>{generateIframeCode()}</code>
+                    </pre>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Simple and secure. Just paste this HTML code into your website.
+                  </p>
+                </div>
+
+                {/* Script Method */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="font-medium">JavaScript embed (Advanced)</Label>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => copyToClipboard(generateScriptCode(), 'script')}
+                      className="h-8"
+                    >
+                      <Copy className="h-3 w-3 mr-1" />
+                      Copy
+                    </Button>
+                  </div>
+                  <div className="relative">
+                    <pre className="bg-slate-100 p-3 rounded-md text-xs overflow-x-auto border max-h-48">
+                      <code>{generateScriptCode()}</code>
+                    </pre>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    More flexible. Allows dynamic configuration and programmatic control.
+                  </p>
+                </div>
+
+                {/* Integration Instructions */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h4 className="font-medium text-blue-900 mb-2">Integration Instructions</h4>
+                  <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
+                    <li>Copy one of the embed codes above</li>
+                    <li>Paste it into your website&apos;s HTML before the closing &lt;/body&gt; tag</li>
+                    <li>The chatbot will appear in the {config.position.replace('-', ' ')} corner</li>
+                    <li>Test the integration using the preview page below</li>
+                  </ol>
+                </div>
+
+                {/* Test Page Link */}
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-medium text-amber-900 mb-1">Test Your Integration</h4>
+                      <p className="text-sm text-amber-800">
+                        Use our test HTML page to verify your chat widget works correctly
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const chatWidgetUrl = process.env.NEXT_PUBLIC_CHAT_WIDGET_URL || 'http://localhost:3001'
+                        window.open(`${chatWidgetUrl}/test-iframe.html`, '_blank')
+                      }}
+                      className="shrink-0"
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Open Test Page
+                    </Button>
+                  </div>
+                  <div className="mt-3 text-xs text-amber-700">
+                    <strong>Instructions:</strong> Open the test page, copy your iframe code above, and paste it into the HTML source to see your widget in action.
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>

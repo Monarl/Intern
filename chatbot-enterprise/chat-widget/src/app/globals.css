@@ -184,3 +184,33 @@ body {
   transform: translateZ(0);
   will-change: scroll-position;
 }
+
+/* Embed-specific styles - ensure transparent background when embedded in iframe */
+@media (display-mode: iframe) {
+  html, body {
+    background: transparent !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}
+
+/* For embed routes specifically */
+body:has([data-embed="true"]) {
+  background: transparent !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Reset gradients and backgrounds in embed mode */
+.embed-mode {
+  background: transparent !important;
+}
+
+.embed-mode .min-h-screen {
+  min-height: 100vh !important;
+}
+
+.embed-mode .bg-gradient-to-br {
+  background: transparent !important;
+}
