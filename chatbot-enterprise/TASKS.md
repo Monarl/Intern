@@ -2,6 +2,15 @@
 
 ## Bug Fixes and Improvements (Current)
 
+### Enhancement: Chatbot Inactive Status Handling
+- [x] Added chatbot active/inactive status checking functionality (July 28, 2025)
+- [x] Implemented chatbot status validation before opening chat widget
+- [x] Added inactive notification display when user tries to interact with inactive chatbot
+- [x] Prevented session creation for inactive chatbots
+- [x] Added visual feedback (disabled button state) for inactive chatbots
+- [x] Implemented message sending prevention for inactive chatbots
+- [x] Added proper error handling and user notification for inactive status
+
 ### Enhancement: Chatbot Embed Code Integration
 - [x] Added embed code generation and copy functionality to chatbot edit page (July 28, 2025)
 - [x] Created HTML iframe embed method with proper positioning and styling

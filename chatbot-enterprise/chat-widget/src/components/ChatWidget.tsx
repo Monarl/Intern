@@ -31,6 +31,9 @@ export function ChatWidget({
   const [sessionId, setSessionId] = useState<string>('')
   const [userIdentifier, setUserIdentifier] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
+  const [chatbotActive, setChatbotActive] = useState<boolean | null>(null)
+  const [inactiveMessage, setInactiveMessage] = useState<string>('This chatbot is currently inactive. Please try again later.')
+  const [showInactiveNotification, setShowInactiveNotification] = useState(false)
   
   /* ────────────── refs ────────────── */
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -46,6 +49,99 @@ export function ChatWidget({
       supabaseRef.current = createSupabaseClient(supabaseUrl, supabaseAnonKey)
     }
   }, [supabaseUrl, supabaseAnonKey])
+
+  /* ────────────── check chatbot status ────────────── */
+  const checkChatbotStatus = useCallback(async () => {
+    if (!supabaseRef.current || !chatbotId) {
+      console.log('checkChatbotStatus: Missing supabase client or chatbotId', { 
+        hasSupabase: !!supabaseRef.current, 
+        chatbotId 
+      });
+      return false;
+    }
+
+    try {
+      console.log('Checking chatbot status for ID:', chatbotId);
+      
+      const { data, error } = await supabaseRef.current
+        .from('chatbots')
+        .select('is_active')
+        .eq('id', chatbotId)
+        .maybeSingle();
+
+      console.log('Chatbot status query result:', { data, error });
+
+      if (error) {
+        console.error('Error checking chatbot status:', error);
+        setChatbotActive(false);
+        return false;
+      }
+
+      const isActive = data?.is_active ?? false;
+      console.log('Chatbot is_active status:', isActive);
+      setChatbotActive(isActive);
+      return isActive;
+    } catch (err) {
+      console.error('Failed to check chatbot status:', err);
+      setChatbotActive(false);
+      return false;
+    }
+  }, [chatbotId]);
+
+  /* ────────────── initialize chatbot status check ────────────── */
+  useEffect(() => {
+    if (supabaseRef.current && chatbotId) {
+      checkChatbotStatus();
+    }
+  }, [supabaseRef.current, chatbotId, checkChatbotStatus]);
+
+  /* ────────────── real-time chatbot status subscription ────────────── */
+  useEffect(() => {
+    if (!supabaseRef.current || !chatbotId) return;
+
+    console.log('Setting up real-time subscription for chatbot status:', chatbotId);
+    
+    const statusChannel = supabaseRef.current
+      .channel(`chatbot_status_${chatbotId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'chatbots',
+          filter: `id=eq.${chatbotId}`,
+        },
+        (payload) => {
+          console.log('Real-time chatbot status update received:', payload);
+          const updatedChatbot = payload.new as any;
+          const newActiveStatus = updatedChatbot.is_active;
+          
+          console.log('Chatbot status changed to:', newActiveStatus);
+          setChatbotActive(newActiveStatus);
+          
+          // If chatbot becomes inactive while chat is open, show notification
+          if (!newActiveStatus && isOpen) {
+            setShowInactiveNotification(true);
+            setTimeout(() => {
+              setShowInactiveNotification(false);
+            }, 4000);
+          }
+          
+          // If chatbot becomes active, hide any existing notification
+          if (newActiveStatus && showInactiveNotification) {
+            setShowInactiveNotification(false);
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('Chatbot status subscription status:', status);
+      });
+
+    return () => {
+      console.log('Cleaning up chatbot status subscription');
+      supabaseRef.current?.removeChannel(statusChannel);
+    };
+  }, [chatbotId, isOpen, showInactiveNotification]);
 
   /* ────────────── helper: metadata ────────────── */
   const getSessionMeta = useCallback(async (sid: string) => {
@@ -412,6 +508,24 @@ export function ChatWidget({
 
   /* ────────────── open widget ────────────── */
   const handleOpen = useCallback(async () => {
+    console.log('handleOpen called, current chatbotActive state:', chatbotActive);
+    
+    // Check chatbot status first
+    const isActive = await checkChatbotStatus();
+    console.log('checkChatbotStatus returned:', isActive);
+    
+    if (!isActive) {
+      console.log('Chatbot is inactive, showing notification instead of opening chat');
+      // Show inactive notification instead of opening chat
+      setShowInactiveNotification(true);
+      // Hide notification after 4 seconds
+      setTimeout(() => {
+        setShowInactiveNotification(false);
+      }, 4000);
+      return;
+    }
+    
+    console.log('Chatbot is active, opening chat widget');
     setIsOpen(true)
     setIsMinimized(false)
     
@@ -424,7 +538,7 @@ export function ChatWidget({
     setTimeout(() => {
       inputRef.current?.focus()
     }, 100)
-  }, [sessionId, userIdentifier, createChatSession, loadChatHistory])
+  }, [sessionId, userIdentifier, createChatSession, loadChatHistory, checkChatbotStatus, chatbotActive])
 
   /* ────────────── send to n8n ────────────── */
   const sendToN8n = useCallback(async (message: string) => {
@@ -499,6 +613,13 @@ export function ChatWidget({
   const handleSendMessage = useCallback(async () => {
     if (!inputMessage.trim() || isLoading || !sessionId) return
 
+    // Check chatbot status before sending message
+    const isActive = await checkChatbotStatus();
+    if (!isActive) {
+      setError('This chatbot is currently inactive. Please try again later.');
+      return;
+    }
+
     const userMessage = inputMessage.trim()
     setInputMessage('')
     setIsLoading(true)
@@ -567,7 +688,7 @@ export function ChatWidget({
         metadata: { error: true }
       }])
     }
-  }, [inputMessage, isLoading, sessionId, saveMessage, sendToN8n])
+  }, [inputMessage, isLoading, sessionId, saveMessage, sendToN8n, checkChatbotStatus])
 
   /* ────────────── handle key press ────────────── */
   const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
@@ -789,15 +910,24 @@ export function ChatWidget({
       {!isOpen && (
         <Button
           onClick={handleOpen}
+          disabled={chatbotActive === null}
           className={cn(
             "w-16 h-16 rounded-2xl shadow-2xl border-0 chat-button-pulse",
             "hover:scale-105 active:scale-95 transition-all duration-200",
-            "relative overflow-hidden group"
+            "relative overflow-hidden group",
+            chatbotActive === null && "opacity-70 cursor-not-allowed",
+            chatbotActive === false && "opacity-60"
           )}
           style={{ 
             background: `linear-gradient(135deg, var(--chat-primary-color) 0%, ${appearance.primaryColor || '#3b82f6'}dd 100%)`
           }}
-          title="Open chat"
+          title={
+            chatbotActive === null 
+              ? "Loading..." 
+              : chatbotActive === false 
+                ? "Chatbot is currently inactive" 
+                : "Open chat"
+          }
         >
           <MessageCircle size={28} className="z-10 group-hover:rotate-12 transition-transform duration-200 text-white" />
           {/* Pulse animation */}
@@ -805,6 +935,39 @@ export function ChatWidget({
           {/* Background decoration */}
           <div className="absolute -top-1 -right-1 w-8 h-8 bg-white/10 rounded-full"></div>
         </Button>
+      )}
+
+      {/* Inactive Chatbot Notification */}
+      {showInactiveNotification && (
+        <Card className={cn(
+          "absolute mb-4 w-80 max-w-[90vw] animate-fadeIn shadow-2xl border border-amber-200 bg-amber-50",
+          position?.includes('right') ? 'right-0' : 'left-0',
+          position?.includes('bottom') ? 'bottom-20' : 'top-20'
+        )}>
+          <CardContent className="p-4">
+            <div className="flex items-start space-x-3">
+              <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0 mt-0.5">
+                <Bot className="w-4 h-4 text-amber-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-medium text-amber-900 mb-1">
+                  Chatbot Unavailable
+                </h3>
+                <p className="text-sm text-amber-800">
+                  {inactiveMessage}
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-6 h-6 p-0 hover:bg-amber-100 text-amber-600"
+                onClick={() => setShowInactiveNotification(false)}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   )
