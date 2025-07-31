@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { formatDistanceToNow } from 'date-fns'
-import { MessageSquare, Users, BarChart, Activity } from 'lucide-react'
+import { MessageSquare, Users, BarChart, Activity, AlertCircle, Clock, UserCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -20,6 +20,9 @@ interface SessionMetadata {
   last_agent_id?: string
   widget_position?: string
   user_agent?: string
+  handoff_requested?: string | null
+  handoff_requested_at?: string | null
+  handoff_reason?: string | null
   [key: string]: unknown
 }
 
@@ -71,6 +74,7 @@ const formatHour = (hourString: string): string => {
 export default function ChatsPage() {
   const { user, userRole, isLoading: authLoading, supabase } = useSupabase()
   const [sessions, setSessions] = useState<ChatSession[]>([])
+  const [pendingHandoffs, setPendingHandoffs] = useState<ChatSession[]>([])
   const [stats, setStats] = useState<ChatStats>({
     total_sessions: 0,
     active_sessions: 0,
@@ -86,6 +90,7 @@ export default function ChatsPage() {
 
   // Check if user has access to this page
   const hasAccess = ALLOWED_ROLES.includes(userRole as string)
+  const isSupportAgent = userRole === 'Support Agent'
 
   // Load chat sessions and stats
   useEffect(() => {
@@ -133,6 +138,40 @@ export default function ChatsPage() {
         )
         
         setSessions(sessionsWithCounts)
+        
+        // Get pending handoff sessions (for Support Agents)
+        if (isSupportAgent) {
+          const { data: handoffSessions, error: handoffError } = await supabase
+            .from('chat_sessions')
+            .select(`
+              *,
+              chatbots(name)
+            `)
+            .eq('status', 'active')
+            .eq('metadata->>handoff_requested', 'true')
+            .is('metadata->>last_agent_id', null)
+            .order('metadata->handoff_requested_at', { ascending: true })
+          
+          if (handoffError) {
+            console.warn('Error fetching handoff sessions:', handoffError)
+          } else {
+            const handoffWithCounts = await Promise.all(
+              (handoffSessions || []).map(async (session: ChatSession) => {
+                const { count } = await supabase
+                  .from('chat_messages')
+                  .select('*', { count: 'exact', head: true })
+                  .eq('session_id', session.session_id)
+                
+                return {
+                  ...session,
+                  chatbot_name: session.chatbots?.name || 'Unknown',
+                  message_count: count || 0
+                }
+              })
+            )
+            setPendingHandoffs(handoffWithCounts)
+          }
+        }
         
         // Get overall stats
         const today = new Date()
@@ -270,7 +309,7 @@ export default function ChatsPage() {
     }
 
     fetchChatSessions()
-  }, [user, hasAccess, authLoading, supabase])
+  }, [user, hasAccess, authLoading, supabase, isSupportAgent])
 
   if (authLoading) {
     return <div className="p-4">Loading authentication...</div>
@@ -300,10 +339,23 @@ export default function ChatsPage() {
         </div>
       )}
 
-      <Tabs defaultValue="overview" className="w-full mb-8">
+      <Tabs defaultValue={isSupportAgent ? "handoffs" : "overview"} className="w-full mb-8">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="sessions">Chat Sessions</TabsTrigger>
+          {isSupportAgent && (
+            <TabsTrigger value="handoffs" className="relative">
+              Support Queue
+              {pendingHandoffs.length > 0 && (
+                <Badge 
+                  variant="destructive" 
+                  className="ml-2 h-5 w-5 p-0 text-xs flex items-center justify-center"
+                >
+                  {pendingHandoffs.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+          )}
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
         
@@ -535,6 +587,95 @@ export default function ChatsPage() {
             </CardContent>
           </Card>
         </TabsContent>
+        
+        {/* Support Agent Handoff Queue */}
+        {isSupportAgent && (
+          <TabsContent value="handoffs" className="pt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5 text-orange-500" />
+                  Pending Support Requests
+                  {pendingHandoffs.length > 0 && (
+                    <Badge variant="destructive">{pendingHandoffs.length}</Badge>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="space-y-2">
+                    {[...Array(5)].map((_, i) => (
+                      <Skeleton key={i} className="h-16 w-full" />
+                    ))}
+                  </div>
+                ) : pendingHandoffs.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <UserCheck className="h-12 w-12 mx-auto mb-4 text-green-500" />
+                    <h3 className="text-lg font-medium text-foreground mb-2">
+                      All caught up!
+                    </h3>
+                    <p>No pending support requests at this time.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {pendingHandoffs.map((session) => (
+                      <div 
+                        key={session.session_id} 
+                        className="border border-orange-200 bg-orange-50 rounded-lg p-4 hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <Clock className="h-4 w-4 text-orange-600" />
+                              <span className="text-sm text-orange-700 font-medium">
+                                Waiting {formatDistanceToNow(
+                                  new Date(session.metadata?.handoff_requested_at || session.updated_at || new Date()), 
+                                  { addSuffix: true }
+                                )}
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                              <div>
+                                <span className="text-muted-foreground">User:</span>
+                                <div className="font-medium">
+                                  {session.user_identifier?.substring(0, 8)}...
+                                </div>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Chatbot:</span>
+                                <div className="font-medium">{session.chatbot_name}</div>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Messages:</span>
+                                <div className="font-medium">{session.message_count}</div>
+                              </div>
+                            </div>
+                            {typeof session.metadata?.handoff_reason === 'string' && (
+                              <div className="mt-2 p-2 bg-white/50 rounded text-sm">
+                                <span className="text-muted-foreground">Reason:</span>
+                                <span className="ml-2">{String(session.metadata.handoff_reason)}</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="ml-4">
+                            <Button 
+                              asChild
+                              className="bg-blue-600 hover:bg-blue-700"
+                            >
+                              <Link href={`/dashboard/chats/${session.session_id}`}>
+                                Take Over Chat
+                              </Link>
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
         
         <TabsContent value="analytics" className="pt-4">
           <Card>

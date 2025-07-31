@@ -1,13 +1,15 @@
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { MessageCircle, X, Send, Minimize2, Bot, User } from 'lucide-react'
+import { MessageCircle, X, Send, Minimize2, Bot, User, UserPlus } from 'lucide-react'
 import { createSupabaseClient } from '@/lib/supabase'
 import { generateSessionId, generateUserIdentifier, formatTime, cn } from '@/lib/utils'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import { Textarea } from '@/components/ui/textarea'
 import type { ChatMessage, ChatSession, ChatWidgetConfig, N8nChatRequest, N8nChatResponse } from '@/types/chat'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 
@@ -34,6 +36,9 @@ export function ChatWidget({
   const [chatbotActive, setChatbotActive] = useState<boolean | null>(null)
   const [inactiveMessage, setInactiveMessage] = useState<string>('This chatbot is currently inactive. Please try again later.')
   const [showInactiveNotification, setShowInactiveNotification] = useState(false)
+  const [handoffRequested, setHandoffRequested] = useState(false)
+  const [showHandoffDialog, setShowHandoffDialog] = useState(false)
+  const [handoffReason, setHandoffReason] = useState('')
   
   /* ────────────── refs ────────────── */
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -412,6 +417,12 @@ export function ChatWidget({
           if (newMessage.role === 'assistant') {
             console.log('Adding assistant message from real-time:', newMessage.content);
             
+            // Check if this is a handback message from an agent
+            if (newMessage.metadata?.handback_to_bot === true) {
+              console.log('Detected handback message, restoring handoff button');
+              setHandoffRequested(false);
+            }
+            
             setMessages(prev => {
               if (prev.some(msg => msg.id === newMessage.id)) {
                 console.log('Message already in state, skipping:', newMessage.id);
@@ -444,6 +455,49 @@ export function ChatWidget({
     };
   }, [sessionId, messages])
   
+  /* ────────────── realtime session updates ────────────── */
+  useEffect(() => {
+    if (!supabaseRef.current || !sessionId) {
+      return;
+    }
+
+    console.log('[ChatWidget] Setting up session metadata subscription for:', sessionId);
+
+    const sessionChannel = supabaseRef.current
+      .channel(`chat_session_${sessionId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'chat_sessions',
+          filter: `session_id=eq.${sessionId}`,
+        },
+        (payload) => {
+          console.log('Real-time session update received:', payload);
+          const updatedSession = payload.new as any;
+          
+          if (updatedSession.metadata) {
+            const metadata = updatedSession.metadata;
+            const hasActiveHandoff = metadata.handoff_requested === 'true' || metadata.handoff_requested === true;
+            
+            // If handoff flags are cleared in session metadata, restore handoff button
+            if (!hasActiveHandoff && handoffRequested) {
+              console.log('Session handoff cleared via metadata update, restoring handoff button');
+              setHandoffRequested(false);
+            }
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('Session subscription status:', status);
+      });
+
+    return () => {
+      console.log('Cleaning up session subscription');
+      supabaseRef.current?.removeChannel(sessionChannel);
+    };
+  }, [sessionId, handoffRequested])
 
 
   /* ────────────── auto-scroll ────────────── */
@@ -458,19 +512,76 @@ export function ChatWidget({
     if (!supabaseRef.current || !sessionId) return
 
     try {
-      const { data, error } = await supabaseRef.current
-        .from('chat_messages')
-        .select('*')
-        .eq('session_id', sessionId)
-        .order('created_at', { ascending: true })
+      // Load messages and session metadata in parallel
+      const [messagesResult, sessionResult] = await Promise.all([
+        supabaseRef.current
+          .from('chat_messages')
+          .select('*')
+          .eq('session_id', sessionId)
+          .order('created_at', { ascending: true }),
+        supabaseRef.current
+          .from('chat_sessions')
+          .select('metadata')
+          .eq('session_id', sessionId)
+          .single()
+      ]);
 
-      if (error) {
-        console.error('Error loading chat history:', error)
+      if (messagesResult.error) {
+        console.error('Error loading chat history:', messagesResult.error)
         return
       }
 
-      if (data && data.length > 0) {
-        const formattedMessages: ChatMessage[] = data.map(msg => ({
+      if (sessionResult.error) {
+        // Check if it's a "not found" error (session doesn't exist yet)
+        if (sessionResult.error.code === 'PGRST116' || sessionResult.error.message.includes('No rows')) {
+          console.log('Session metadata not found - likely a new session');
+          // For new sessions, default to no handoff requested
+          setHandoffRequested(false);
+        } else {
+          console.error('Error loading session metadata:', sessionResult.error)
+        }
+        // Continue with message loading even if session metadata fails
+      } else if (sessionResult.data?.metadata) {
+        const metadata = sessionResult.data.metadata;
+        // Check if handoff is active (not null, not undefined, and set to 'true' or true)
+        const hasActiveHandoff = metadata.handoff_requested === 'true' || metadata.handoff_requested === true;
+        
+        // Check if there's a recent handback message that should clear the handoff
+        let hasRecentHandback = false;
+        if (messagesResult.data && messagesResult.data.length > 0) {
+          // Look for handback messages from agents
+          const handbackMessages = messagesResult.data.filter(msg => 
+            msg.metadata?.handback_to_bot === true
+          );
+          if (handbackMessages.length > 0) {
+            // Get the most recent handback message
+            const latestHandback = handbackMessages[handbackMessages.length - 1];
+            const handbackTime = new Date(latestHandback.created_at).getTime();
+            
+            // Get the handoff request time if available
+            const handoffTime = metadata.handoff_requested_at 
+              ? new Date(metadata.handoff_requested_at).getTime()
+              : 0;
+            
+            // If handback is more recent than handoff request, clear the handoff
+            hasRecentHandback = handbackTime > handoffTime;
+          }
+        }
+        
+        console.log('Session handoff status:', { 
+          hasActiveHandoff, 
+          hasRecentHandback, 
+          handoffRequested: hasActiveHandoff && !hasRecentHandback 
+        });
+        
+        setHandoffRequested(hasActiveHandoff && !hasRecentHandback);
+      } else {
+        // No session metadata or empty metadata - default to no handoff
+        setHandoffRequested(false);
+      }
+
+      if (messagesResult.data && messagesResult.data.length > 0) {
+        const formattedMessages: ChatMessage[] = messagesResult.data.map(msg => ({
           id: msg.id,
           role: msg.role as 'user' | 'assistant' | 'system',
           content: msg.content,
@@ -480,7 +591,7 @@ export function ChatWidget({
         setMessages(formattedMessages)
         
         // Add message IDs to processed set
-        data.forEach(msg => processedIdsRef.current.add(msg.id))
+        messagesResult.data.forEach(msg => processedIdsRef.current.add(msg.id))
       } else {
         // Add welcome message if no history
         const welcomeId = `welcome_${Date.now()}`
@@ -690,6 +801,75 @@ export function ChatWidget({
     }
   }, [inputMessage, isLoading, sessionId, saveMessage, sendToN8n, checkChatbotStatus])
 
+  /* ────────────── handle handoff request ────────────── */
+  const handleRequestHandoff = useCallback(async (reason?: string) => {
+    if (!supabaseRef.current || !sessionId || handoffRequested) return
+
+    try {
+      setIsLoading(true)
+      
+      // Update session metadata to indicate handoff request
+      const { error: sessionError } = await supabaseRef.current
+        .from('chat_sessions')
+        .update({
+          metadata: {
+            handoff_requested: 'true',
+            handoff_requested_at: new Date().toISOString(),
+            handoff_reason: reason || 'User requested human support'
+          }
+        })
+        .eq('session_id', sessionId)
+
+      if (sessionError) {
+        console.error('Error requesting handoff:', sessionError)
+        setError('Failed to request human support. Please try again.')
+        return
+      }
+
+      // Add a system message to the chat
+      const handoffMessage: ChatMessage = {
+        id: `handoff_${Date.now()}`,
+        role: 'system',
+        content: 'You have requested to speak with a human agent. Please wait while we connect you to the next available support representative.',
+        timestamp: new Date().toISOString(),
+        metadata: { isHandoffRequest: true }
+      }
+
+      setMessages(prev => [...prev, handoffMessage])
+      setHandoffRequested(true)
+      setShowHandoffDialog(false)
+      setHandoffReason('')
+
+      // Save the system message to database as assistant message with special metadata
+      await saveMessage('assistant', handoffMessage.content, { ...handoffMessage.metadata, system_message: true })
+
+      // Trigger n8n webhook for handoff notification (optional)
+      if (n8nWebhookUrl) {
+        try {
+          await fetch(n8nWebhookUrl.replace('/rag-chat', '/handoff-request'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sessionId,
+              chatbotId,
+              userIdentifier,
+              reason: reason || 'User requested human support',
+              timestamp: new Date().toISOString()
+            })
+          })
+        } catch (webhookError) {
+          console.warn('Failed to notify n8n of handoff request:', webhookError)
+        }
+      }
+
+    } catch (err) {
+      console.error('Error requesting handoff:', err)
+      setError('Failed to request human support. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [sessionId, handoffRequested, saveMessage, n8nWebhookUrl, chatbotId, userIdentifier])
+
   /* ────────────── handle key press ────────────── */
   const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -861,6 +1041,18 @@ export function ChatWidget({
 
               {/* Input */}
               <div className="p-4 bg-white border-t border-slate-100">
+                {/* Handoff Request Notice */}
+                {handoffRequested && (
+                  <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div className="flex items-center gap-2 text-amber-800">
+                      <UserPlus size={16} />
+                      <span className="text-sm font-medium">
+                        Support request sent. A human agent will join soon.
+                      </span>
+                    </div>
+                  </div>
+                )}
+                
                 <div className="flex gap-3 items-end">
                   <div className="flex-1 relative">
                     <Input
@@ -884,6 +1076,24 @@ export function ChatWidget({
                       </div>
                     )}
                   </div>
+                  
+                  {/* Human Support Button */}
+                  {!handoffRequested && (
+                    <Button
+                      onClick={() => setShowHandoffDialog(true)}
+                      disabled={isLoading || !sessionId}
+                      variant="outline"
+                      className={cn(
+                        "h-12 w-12 rounded-2xl border-2 border-slate-300",
+                        "hover:border-orange-500 hover:text-orange-600 hover:bg-orange-50",
+                        "transition-all duration-200 disabled:hover:scale-100"
+                      )}
+                      title="Request human support"
+                    >
+                      <UserPlus size={18} />
+                    </Button>
+                  )}
+                  
                   <Button
                     onClick={handleSendMessage}
                     disabled={!inputMessage.trim() || isLoading || !sessionId}
@@ -969,6 +1179,44 @@ export function ChatWidget({
           </CardContent>
         </Card>
       )}
+
+      {/* Human Support Request Dialog */}
+      <Dialog open={showHandoffDialog} onOpenChange={setShowHandoffDialog}>
+        <DialogContent className="sm:max-w-md bg-amber-50">
+          <DialogHeader>
+            <DialogTitle>Request Human Support</DialogTitle>
+            <DialogDescription>
+              A human agent will join the conversation to assist you. Please briefly describe your issue (optional).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Textarea
+              placeholder="Describe your issue (optional)..."
+              value={handoffReason}
+              onChange={(e) => setHandoffReason(e.target.value)}
+              className="min-h-[80px]"
+            />
+            <div className="flex justify-end gap-3">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowHandoffDialog(false)
+                  setHandoffReason('')
+                }}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => handleRequestHandoff(handoffReason.trim() || undefined)}
+                disabled={isLoading}
+                className="bg-orange-600 hover:bg-orange-700"
+              >
+                {isLoading ? 'Requesting...' : 'Request Support'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

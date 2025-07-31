@@ -58,6 +58,9 @@ interface SessionMetadata {
   last_agent_id?: string
   widget_position?: string
   user_agent?: string
+  handoff_requested?: string | null
+  handoff_requested_at?: string | null
+  handoff_reason?: string | null
   [key: string]: unknown
 }
 
@@ -215,7 +218,7 @@ export default function ChatSessionDetailPage() {
     if (channelRef.current) return
 
     const channel = supabase
-      .channel(`chat_messages_${sessionId}`) // stable ID
+      .channel(`chat_${sessionId}`) // stable ID for both messages and session updates
       .on(
         'postgres_changes',
         {
@@ -233,6 +236,32 @@ export default function ChatSessionDetailPage() {
               ? prev
               : [...prev, newMsg],
           )
+        },
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'chat_sessions',
+          filter: `session_id=eq.${sessionId}`,
+        },
+        (payload: { new: { session_id: string; metadata: Record<string, unknown>; updated_at: string } }) => {
+          // Ignore if user toggled real-time off after subscription
+          if (!realtimeRef.current) return
+          
+          const updatedSession = payload.new
+          console.log('Real-time session update received:', updatedSession)
+          
+          // Update session state with new metadata
+          setSession(prevSession => {
+            if (!prevSession) return prevSession
+            return {
+              ...prevSession,
+              metadata: updatedSession.metadata,
+              updated_at: updatedSession.updated_at,
+            }
+          })
         },
       )
       .subscribe()
@@ -259,33 +288,60 @@ export default function ChatSessionDetailPage() {
       setSendingMessage(true)
 
       // Insert message
-      const { error: mErr } = await supabase
+      const messageData = {
+        session_id: sessionId,
+        role: 'assistant' as const,
+        content: agentMessage,
+        metadata: {
+          agent_intervention: true,
+          agent_id: user?.id,
+          agent_email: user?.email,
+        },
+      }
+
+      const { data: newMessage, error: mErr } = await supabase
         .from('chat_messages')
-        .insert({
-          session_id: sessionId,
-          role: 'assistant',
-          content: agentMessage,
-          metadata: {
-            agent_intervention: true,
-            agent_id: user?.id,
-            agent_email: user?.email,
-          },
-        })
+        .insert(messageData)
+        .select()
+        .single()
+
       if (mErr) throw new Error(mErr.message)
 
+      // Immediately add the message to the UI state (optimistic update)
+      if (newMessage) {
+        setMessages(prev => [...prev, {
+          id: newMessage.id,
+          role: newMessage.role,
+          content: newMessage.content,
+          created_at: newMessage.created_at,
+          metadata: newMessage.metadata
+        }])
+      }
+
       // Mark intervention
+      const updatedSessionMetadata = {
+        ...session?.metadata,
+        had_human_intervention: true,
+        last_agent_id: user?.id,
+      }
+
       const { error: uErr } = await supabase
         .from('chat_sessions')
         .update({
           updated_at: new Date().toISOString(),
-          metadata: {
-            ...session?.metadata,
-            had_human_intervention: true,
-            last_agent_id: user?.id,
-          },
+          metadata: updatedSessionMetadata,
         })
         .eq('session_id', sessionId)
       if (uErr) console.error('Error updating session:', uErr)
+
+      // Update session state immediately
+      if (session) {
+        setSession({
+          ...session,
+          metadata: updatedSessionMetadata,
+          updated_at: new Date().toISOString()
+        })
+      }
 
       setAgentMessage('')
 
@@ -296,6 +352,100 @@ export default function ChatSessionDetailPage() {
         e instanceof Error
           ? e.message
           : 'Failed to send message'
+      setError(msg)
+    } finally {
+      setSendingMessage(false)
+    }
+  }
+
+  // ── Hand back to bot ────────────────────────────────────────────────────
+  const handleHandBackToBot = async () => {
+    if (!sessionId || !canIntervene || !supabase) return
+
+    try {
+      setSendingMessage(true)
+
+      // Send a message indicating handback to bot
+      const handbackMessageData = {
+        session_id: sessionId,
+        role: 'assistant' as const,
+        content: 'I have completed assisting you. The chatbot will now continue to help you with any further questions.',
+        metadata: {
+          agent_intervention: true,
+          agent_id: user?.id,
+          agent_email: user?.email,
+          handback_to_bot: true,
+        }
+      }
+
+      const { data: handbackMessage, error: mErr } = await supabase
+        .from('chat_messages')
+        .insert(handbackMessageData)
+        .select()
+        .single()
+
+      if (mErr) throw new Error(mErr.message)
+
+      // Immediately add the handback message to the UI state
+      if (handbackMessage) {
+        setMessages(prev => [...prev, {
+          id: handbackMessage.id,
+          role: handbackMessage.role,
+          content: handbackMessage.content,
+          created_at: handbackMessage.created_at,
+          metadata: handbackMessage.metadata
+        }])
+      }
+
+      // Clear handoff request flags - use null instead of undefined to preserve JSON structure
+      const updatedMetadata = { ...session?.metadata }
+      updatedMetadata.had_human_intervention = true
+      updatedMetadata.last_agent_id = user?.id
+      // Set handoff flags to null instead of undefined to ensure proper JSON handling
+      updatedMetadata.handoff_requested = null
+      updatedMetadata.handoff_requested_at = null  
+      updatedMetadata.handoff_reason = null
+
+      const { error: uErr } = await supabase
+        .from('chat_sessions')
+        .update({
+          updated_at: new Date().toISOString(),
+          metadata: updatedMetadata,
+        })
+        .eq('session_id', sessionId)
+      if (uErr) console.error('Error updating session:', uErr)
+
+      // Immediately update the session state to reflect the handback
+      if (session) {
+        setSession({
+          ...session,
+          metadata: updatedMetadata,
+          updated_at: new Date().toISOString()
+        })
+      }
+
+      // Trigger n8n webhook to notify of handback (optional)
+      // Note: This would need to be retrieved from the chatbot config in a real implementation
+      const n8nWebhookUrl = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL
+      if (n8nWebhookUrl) {
+        try {
+          await fetch(n8nWebhookUrl.replace('/rag-chat', '/handback-to-bot'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sessionId,
+              chatbotId: session?.chatbot_id,
+              agentId: user?.id,
+              timestamp: new Date().toISOString()
+            })
+          })
+        } catch (webhookError) {
+          console.warn('Failed to notify n8n of handback:', webhookError)
+        }
+      }
+
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Failed to hand back to bot'
       setError(msg)
     } finally {
       setSendingMessage(false)
@@ -643,19 +793,45 @@ export default function ChatSessionDetailPage() {
                 className="flex-1"
                 disabled={sendingMessage}
               />
-              <Button
-                onClick={handleSendAgentMessage}
-                disabled={
-                  !agentMessage.trim() || sendingMessage
-                }
-              >
-                <Send size={16} className="mr-2" />
-                Send
-              </Button>
+              <div className="flex flex-col gap-2">
+                <Button
+                  onClick={handleSendAgentMessage}
+                  disabled={
+                    !agentMessage.trim() || sendingMessage
+                  }
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  <Send size={16} className="mr-2" />
+                  Send
+                </Button>
+                {session?.metadata?.handoff_requested === 'true' && (
+                  <Button
+                    onClick={handleHandBackToBot}
+                    disabled={sendingMessage}
+                    variant="outline"
+                    className="text-green-600 border-green-600 hover:bg-green-50"
+                  >
+                    <Bot size={16} className="mr-2" />
+                    Hand Back to Bot
+                  </Button>
+                )}
+              </div>
             </div>
             <div className="w-full text-xs text-muted-foreground mt-2">
-              Your message will be sent as an agent
-              intervention in this conversation.
+              {session?.metadata?.handoff_requested === 'true' ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+                  <span>
+                    User requested human support
+                    {typeof session.metadata.handoff_reason === 'string' && 
+                      session.metadata.handoff_reason && 
+                      `: ${session.metadata.handoff_reason}`
+                    }
+                  </span>
+                </div>
+              ) : (
+                'Your message will be sent as an agent intervention in this conversation.'
+              )}
             </div>
           </CardFooter>
         )}
