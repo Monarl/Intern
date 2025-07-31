@@ -28,7 +28,8 @@ Later:
     + **Thông báo**: Gửi thông báo đến nhân viên CS khi có cuộc trò chuyện cần được tiếp quản.
     + **Chuyển giao lại bot**: Sau khi nhân viên CS hoàn tất hỗ trợ, họ có thể chuyển cuộc trò chuyện trở lại cho chatbot nếu phù hợp.
 ### Future:
-- When the agent use hand back to bot, the user chatbot should regain the manual handoff button to request human support again.
-- The metadata in the chat session when chat widget request for handoff should add the field instead of replacing the existing metadata.
-- When i first open the chat widget and chat, the bot respond get duplicated. But when i close and reopen the chat widget, there is only one message like normal. Fix this issue.
-- Write a README to give the code snippets and locations that require the n8n workflow in human-handoff-implementation.md and how can I implement that n8n workflow.
+- **Facebook Messenger, Instagram Messenger, WhatsApp, Viber, Zalo (cá nhân), Zalo OA**: Cung cấp các công cụ và hướng dẫn để tích hợp chatbot với các nền tảng này thông qua API của từng nền tảng.
+- When intervene with agent, the chat session initial metadata, for example {"created_at": "2025-07-31T02:34:00.088Z", "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36", "widget_position": "bottom-right"}, get replaced with handoff_reason, handoff_requested, handoff_requested_at, and other fields. Instead, it should add these fields to the existing metadata without replacing the initial metadata.
+- Chat filter by text and return the chat session and message that contains the text in the chát dashboard.
+- Allow other roles to view the knowledge base and documents but not edit them. Only Super Admin and Knowledge Manager can edit the knowledge base and documents.
+- Allow select multiple documents and delete them in the knowledge base.
