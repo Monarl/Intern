@@ -149,7 +149,6 @@ export default function ChatsPage() {
             `)
             .eq('status', 'active')
             .eq('metadata->>handoff_requested', 'true')
-            .is('metadata->>last_agent_id', null)
             .order('metadata->handoff_requested_at', { ascending: true })
           
           if (handoffError) {

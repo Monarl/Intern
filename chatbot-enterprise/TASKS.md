@@ -2,6 +2,15 @@
 
 ## Bug Fixes and Improvements (Current)
 
+### Bug Fix: Support Queue Not Showing Repeat Handoff Requests
+- [x] Fixed support queue not displaying pending requests when user requests human support again (August 1, 2025)
+- [x] **Root Cause**: Support queue query filtered out sessions with `last_agent_id` set from previous handoffs
+- [x] **Issue**: Once an agent handled a request and handed back to bot, `last_agent_id` was permanently set
+- [x] **Problem**: Query `.is('metadata->>last_agent_id', null)` prevented sessions from appearing in queue again
+- [x] **Solution**: Removed `last_agent_id` filter from support queue query in `/dashboard/chats/page.tsx`
+- [x] **Result**: Support queue now shows all active handoff requests regardless of previous agent interventions
+- [x] **File Modified**: `admin-dashboard/app/dashboard/chats/page.tsx` (line 152)
+
 ### Bug Fix: Chatbot Deletion Not Working
 - [x] Fixed chatbot deletion functionality that was silently failing (July 28, 2025)
 - [x] **Root Cause**: Missing DELETE RLS policy for chatbots table
