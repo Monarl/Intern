@@ -38,8 +38,8 @@ export default function KnowledgeBasesPage() {
   const [selectedKb, setSelectedKb] = useState<KnowledgeBase | null>(null)
 
   const fetchKnowledgeBases = useCallback(async () => {
-    // Double check permissions before making API call
-    if (userRole !== 'Super Admin' && userRole !== 'Knowledge Manager') {
+    // Check if user has view permission before making API call
+    if (!userRole) {
       return
     }
     
@@ -86,8 +86,8 @@ export default function KnowledgeBasesPage() {
   }, [userRole])
 
   useEffect(() => {
-    // Only fetch data if user has the right permissions
-    if (!userLoading && (userRole === 'Super Admin' || userRole === 'Knowledge Manager')) {
+    // Only fetch data if user has view permissions
+    if (!userLoading && userRole) {
       fetchKnowledgeBases()
     }
   }, [userLoading, userRole, fetchKnowledgeBases])
@@ -131,11 +131,13 @@ export default function KnowledgeBasesPage() {
     router.push(`/dashboard/knowledge-bases/${kb.id}`)
   }
   
-  // Only Super Admin and Knowledge Manager should be able to access this page
-  const hasPermission = userRole === 'Super Admin' || userRole === 'Knowledge Manager'
+  // All authenticated users can view knowledge bases
+  const hasViewPermission = userRole !== null
+  // Only Super Admin and Knowledge Manager can edit/delete
+  const hasEditPermission = userRole === 'Super Admin' || userRole === 'Knowledge Manager'
 
   // Show unauthorized access message if user doesn't have correct role
-  if (!userLoading && !hasPermission) {
+  if (!userLoading && !hasViewPermission) {
     return (
       <div className="space-y-6">
         <h1 className="text-3xl font-bold tracking-tight">Knowledge Bases</h1>
@@ -144,7 +146,7 @@ export default function KnowledgeBasesPage() {
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Unauthorized Access</AlertTitle>
           <AlertDescription>
-            You do not have permission to view this page. Only Super Admins and Knowledge Managers can access Knowledge Bases.
+            You do not have permission to view this page. Please contact your administrator.
           </AlertDescription>
         </Alert>
       </div>
@@ -155,10 +157,12 @@ export default function KnowledgeBasesPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold tracking-tight">Knowledge Bases</h1>
-        <Button onClick={() => setNewKbDialogOpen(true)}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          New Knowledge Base
-        </Button>
+        {hasEditPermission && (
+          <Button onClick={() => setNewKbDialogOpen(true)}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            New Knowledge Base
+          </Button>
+        )}
       </div>
       
       <p className="text-muted-foreground">
@@ -186,10 +190,12 @@ export default function KnowledgeBasesPage() {
         <Card className="w-full p-12 text-center">
           <CardContent>
             <p className="text-muted-foreground mb-4">No knowledge bases found</p>
-            <Button onClick={() => setNewKbDialogOpen(true)}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Create your first knowledge base
-            </Button>
+            {hasEditPermission && (
+              <Button onClick={() => setNewKbDialogOpen(true)}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Create your first knowledge base
+              </Button>
+            )}
           </CardContent>
         </Card>
       ) : (
@@ -218,33 +224,35 @@ export default function KnowledgeBasesPage() {
                 >
                   View Documents
                 </Button>
-                <div className="flex gap-1">
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    title="Upload Files"
-                    onClick={() => openUploadFileDialog(kb)}
-                  >
-                    <FileUp className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    title="Add URL"
-                    onClick={() => openUploadUrlDialog(kb)}
-                  >
-                    <Globe className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="text-red-500"
-                    title="Delete Knowledge Base"
-                    onClick={() => openDeleteDialog(kb)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
+                {hasEditPermission && (
+                  <div className="flex gap-1">
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      title="Upload Files"
+                      onClick={() => openUploadFileDialog(kb)}
+                    >
+                      <FileUp className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      title="Add URL"
+                      onClick={() => openUploadUrlDialog(kb)}
+                    >
+                      <Globe className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="text-red-500"
+                      title="Delete Knowledge Base"
+                      onClick={() => openDeleteDialog(kb)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
               </CardFooter>
             </Card>
           ))}

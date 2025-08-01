@@ -46,8 +46,9 @@ export async function GET(request: Request) {
     const userRole = roleData?.name;
     console.log('User role in knowledge-base list API:', userRole);
     
-    if (userRole !== 'Super Admin' && userRole !== 'Knowledge Manager') {
-      return NextResponse.json({ error: `Insufficient permissions - Required: Super Admin or Knowledge Manager, Got: ${userRole || 'none'}` }, { status: 403 });
+    // Allow all authenticated users to view knowledge bases
+    if (!userRole) {
+      return NextResponse.json({ error: 'No role assigned to user' }, { status: 403 });
     }
 
     // Get all knowledge bases

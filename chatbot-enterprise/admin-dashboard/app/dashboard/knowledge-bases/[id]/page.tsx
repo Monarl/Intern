@@ -40,8 +40,8 @@ export default function DocumentsPage({ params }: { params: Promise<{ id: string
   const [documents, setDocuments] = useState<Document[]>([])
   
   const fetchData = useCallback(async () => {
-    // Skip API call if user doesn't have permission
-    if (userRole !== 'Super Admin' && userRole !== 'Knowledge Manager') {
+    // Skip API call if user doesn't have any role
+    if (!userRole) {
       setLoading(false)
       return
     }
@@ -86,7 +86,7 @@ export default function DocumentsPage({ params }: { params: Promise<{ id: string
   
   useEffect(() => {
     // Only fetch data once the user role is loaded
-    if (!userLoading && (userRole === 'Super Admin' || userRole === 'Knowledge Manager')) {
+    if (!userLoading && userRole) {
       console.log('User role loaded:', userRole);
       fetchData();
     }
@@ -136,8 +136,9 @@ export default function DocumentsPage({ params }: { params: Promise<{ id: string
     }
   }
 
-  // Access control - only Super Admin and Knowledge Manager can view this page
-  const hasPermission = userRole === 'Super Admin' || userRole === 'Knowledge Manager';
+  // Access control - all authenticated users can view, only Super Admin and Knowledge Manager can edit/delete
+  const hasViewPermission = userRole !== null;
+  const hasEditPermission = userRole === 'Super Admin' || userRole === 'Knowledge Manager';
   
   // Show loading state while checking permissions
   if (userLoading) {
@@ -167,7 +168,7 @@ export default function DocumentsPage({ params }: { params: Promise<{ id: string
   }
   
   // Show unauthorized message if user doesn't have permission
-  if (!hasPermission) {
+  if (!hasViewPermission) {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-2">
@@ -188,7 +189,7 @@ export default function DocumentsPage({ params }: { params: Promise<{ id: string
             <h2 className="text-xl font-semibold">Access Denied</h2>
             <p className="text-muted-foreground">
               You don&apos;t have permission to view this knowledge base.
-              Only Super Admin and Knowledge Manager roles can access this page.
+              Please contact your administrator.
             </p>
             <Button 
               onClick={() => router.push('/dashboard')}
@@ -282,15 +283,17 @@ export default function DocumentsPage({ params }: { params: Promise<{ id: string
                 </p>
               </CardContent>
               <CardFooter className="flex justify-end py-2">
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  className="text-red-500"
-                  onClick={() => handleDeleteDocument(doc)}
-                >
-                  <Trash2 className="h-4 w-4 mr-1" />
-                  Delete
-                </Button>
+                {hasEditPermission && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className="text-red-500"
+                    onClick={() => handleDeleteDocument(doc)}
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Delete
+                  </Button>
+                )}
               </CardFooter>
             </Card>
           ))}

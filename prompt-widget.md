@@ -30,9 +30,10 @@ Later:
 ### Future:
 - **Facebook Messenger, Instagram Messenger, WhatsApp, Viber, Zalo (cá nhân), Zalo OA**: Cung cấp các công cụ và hướng dẫn để tích hợp chatbot với các nền tảng này thông qua API của từng nền tảng.
 
-- When a user requests human support again, the support queue in the chat page of admin dashboard doesn't show the pending request again. Look at the existing code in the admin dashboard to see how the current pending requests are displayed and identigy the issue.
+- When a user requests human support again, the support queue in the chat page of admin dashboard doesn't show the pending request again. Look at the existing code in the admin dashboard to see how the current pending requests are displayed and identify the issue.
 
 - Chat filter by text and return the chat session and message that contains the text in the chats dashboard.
-owledge base and documents but not edit them. Only Super Admin and Knowledge Manager can edit the knowledge base and documents.
+
+- Currently only Super Admin and Knowledge Manager can view, edit, delete the knowledge base and documents. I want the other roles can view knowledge base and documents but not edit/delete them.
 
 - Allow select multiple documents and delete them in the knowledge base.

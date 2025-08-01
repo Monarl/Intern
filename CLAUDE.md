@@ -168,3 +168,5 @@ chatbot-enterprise/
 - Test all database changes against RLS policies
 - Document new workflows in `n8n-workflows/` directory
 - Use Vietnamese timezone utilities from `lib/vietnamese-time.ts`
+- Always read `chatbot-enterprise/Chatbot_DoanhNghiep.md` for specific module details and requirements.
+- Edit inside chatbot-enterprise folder: All code changes should be made within the `chatbot-enterprise` folder structure. Do not create files outside this directory.
