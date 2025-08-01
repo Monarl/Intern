@@ -808,15 +808,32 @@ export function ChatWidget({
     try {
       setIsLoading(true)
       
+      // First, get the current session metadata to preserve existing fields
+      const { data: currentSession, error: fetchError } = await supabaseRef.current
+        .from('chat_sessions')
+        .select('metadata')
+        .eq('session_id', sessionId)
+        .single()
+
+      if (fetchError) {
+        console.error('Error fetching current session:', fetchError)
+        setError('Failed to request human support. Please try again.')
+        return
+      }
+
+      // Merge handoff fields with existing metadata instead of replacing it
+      const updatedMetadata = {
+        ...currentSession.metadata, // Preserve existing metadata (widget_position, user_agent, created_at, etc.)
+        handoff_requested: 'true',
+        handoff_requested_at: new Date().toISOString(),
+        handoff_reason: reason || 'User requested human support'
+      }
+      
       // Update session metadata to indicate handoff request
       const { error: sessionError } = await supabaseRef.current
         .from('chat_sessions')
         .update({
-          metadata: {
-            handoff_requested: 'true',
-            handoff_requested_at: new Date().toISOString(),
-            handoff_reason: reason || 'User requested human support'
-          }
+          metadata: updatedMetadata
         })
         .eq('session_id', sessionId)
 

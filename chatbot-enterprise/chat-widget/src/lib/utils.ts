@@ -29,7 +29,7 @@ export function generateUserIdentifier(): string {
 }
 
 /**
- * Format timestamp to readable time format (HH:MM)
+ * Format timestamp to readable time format (HH:MM) in Vietnamese timezone
  */
 export function formatTime(timestamp: string): string {
   const date = new Date(timestamp)
@@ -40,5 +40,29 @@ export function formatTime(timestamp: string): string {
   if (diffInMinutes < 60) return `${diffInMinutes}m ago`
   if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`
   
-  return date.toLocaleDateString()
+  // Format date in Vietnamese timezone
+  return date.toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })
+}
+
+/**
+ * Format timestamp to Vietnamese date and time
+ */
+export function formatVietnameseDateTime(timestamp: string): string {
+  const date = new Date(timestamp)
+  return date.toLocaleString('vi-VN', { 
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  })
+}
+
+/**
+ * Get current Vietnamese time as ISO string
+ */
+export function getCurrentVietnameseTime(): string {
+  return new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' }).replace(' ', 'T') + '+07:00'
 }

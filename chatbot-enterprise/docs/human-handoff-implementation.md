@@ -51,17 +51,23 @@ const [handoffReason, setHandoffReason] = useState('')
 ## Database Schema
 
 ### Session Metadata Structure
-The implementation uses existing `chat_sessions.metadata` JSONB field with these new properties:
+The implementation uses existing `chat_sessions.metadata` JSONB field. **Important**: Handoff fields are merged with existing metadata, preserving initial session data.
 
+**Complete metadata example**:
 ```json
 {
+  "created_at": "2025-07-31T02:34:00.088Z",
+  "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+  "widget_position": "bottom-right",
   "handoff_requested": "true",
-  "handoff_requested_at": "2025-01-18T10:30:00.000Z",
+  "handoff_requested_at": "2025-01-18T10:30:00.000Z", 
   "handoff_reason": "I need help with a complex technical issue",
   "had_human_intervention": true,
   "last_agent_id": "agent-uuid"
 }
 ```
+
+**Metadata Preservation**: The system correctly preserves all existing metadata when adding handoff fields, ensuring no loss of session context or tracking data.
 
 ### Message Metadata Structure
 Agent messages include special metadata:
