@@ -1,6 +1,50 @@
-# Enterprise Chatbot System - Initial Tasks
+# En### Enhancement: Chat Search Functionality
+- [x] Implementing text search for chat sessions and messages in dashboard (August 3, 2025)
+- [x] **Feature**: Allow users to search for specific text within chat sessions and messages
+- [x] **Implementation**: Search input field that filters chat sessions by content
+- [x] **Scope**: Search both chat session metadata and message content
+- [x] **UI**: Search bar in the chat sessions tab with real-time filtering
+- [x] **Navigation**: Preserve search and tab state when navigating to session details and back
+- [x] **Search Bar**: Made search bar longer (w-96) for better usability
+- [x] **Features Implemented**:
+  - Real-time search with 300ms debounce
+  - Search in user identifiers, chatbot names, platforms, and message content
+  - Results sorted by relevance (exact matches first)
+  - Clear search functionality with X button
+  - Loading indicator during search
+  - Search result count display
+  - URL parameter persistence for navigation state
+  - Back button preserves previous tab and search statese Chatbot System - Initial Tasks
 
 ## Bug Fixes and Improvements (Current)
+
+### Bug Fix: Bulk Delete Documents API Field Mismatch
+- [x] Fixed bulk delete documents functionality that was failing with "Invalid document IDs" error (August 3, 2025)
+- [x] **Root Cause**: Frontend sending `document_ids` field but API expecting `documentIds` field
+- [x] **Issue**: Field name mismatch between frontend request body and API parameter destructuring
+- [x] **Solution**: Updated API to accept `document_ids` field name to match frontend implementation
+- [x] **Enhancement**: Added validation to ensure documents belong to specified knowledge base
+- [x] **File Modified**: `admin-dashboard/app/api/knowledge-base/documents/bulk-delete/route.ts`
+- [x] **Result**: Users can now successfully delete multiple documents at once
+
+### Enhancement: Processing Status Validation for Bulk Delete Operations
+- [x] Added processing status validation to bulk delete operations (August 3, 2025)
+- [x] **Feature**: Prevent deletion of documents with "processing" status in bulk operations
+- [x] **Implementation**: Added status checks similar to single delete operations
+- [x] **Scope**: Both bulk delete documents and bulk delete knowledge bases
+- [x] **Behavior**: Returns 409 Conflict with detailed error messages listing processing documents
+- [x] **Files Modified**: 
+  - `admin-dashboard/app/api/knowledge-base/documents/bulk-delete/route.ts`
+  - `admin-dashboard/app/api/knowledge-base/bulk-delete/route.ts`
+- [x] **Consistency**: Maintains same validation logic as single delete operations
+- [x] **Error Handling**: Provides detailed feedback about which documents are still processing
+
+### Enhancement: Chat Search Functionality
+- [x] Implementing text search for chat sessions and messages in dashboard (August 3, 2025)
+- [x] **Feature**: Allow users to search for specific text within chat sessions and messages
+- [x] **Implementation**: Search input field that filters chat sessions by content
+- [x] **Scope**: Search both chat session metadata and message content
+- [x] **UI**: Search bar in the chat sessions tab with real-time filtering
 
 ### Bug Fix: Support Queue Not Showing Repeat Handoff Requests
 - [x] Fixed support queue not displaying pending requests when user requests human support again (August 1, 2025)

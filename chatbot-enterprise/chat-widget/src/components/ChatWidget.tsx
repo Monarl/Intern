@@ -47,6 +47,7 @@ export function ChatWidget({
   const channelRef = useRef<RealtimeChannel | null>(null)
   const prevSessionRef = useRef<string | null>(null)
   const processedIdsRef = useRef<Set<string>>(new Set())
+  const welcomeShownRef = useRef<boolean>(false)
 
   /* ────────────── Supabase client ────────────── */
   useEffect(() => {
@@ -305,6 +306,9 @@ export function ChatWidget({
           setSessionId(newSessionId);
           setUserIdentifier(newUserIdentifier);
           
+          // Reset welcome message flag for new session
+          welcomeShownRef.current = false;
+          
           // Store the new session ID for future reference
           prevSessionRef.current = newSessionId;
           console.log('New session initialized:', newSessionId);
@@ -385,11 +389,6 @@ export function ChatWidget({
     if (!supabaseRef.current || !sessionId) return;
 
     console.log('Setting up real-time subscription for session:', sessionId);
-    
-    // Add any existing messages to our processed set
-    messages.forEach(msg => {
-      if (msg.id) processedIdsRef.current.add(msg.id);
-    });
 
     const channel = supabaseRef.current
       .channel(`chat_messages_${sessionId}`)
@@ -405,14 +404,11 @@ export function ChatWidget({
           console.log('Real-time message received:', payload);
           const newMessage = payload.new as any;
           
-          // Skip if we've already processed this message
+          // Skip if we've already processed this message by ID
           if (processedIdsRef.current.has(newMessage.id)) {
             console.log('Skipping already processed message:', newMessage.id);
             return;
           }
-          
-          // Add to processed set
-          processedIdsRef.current.add(newMessage.id);
           
           if (newMessage.role === 'assistant') {
             console.log('Adding assistant message from real-time:', newMessage.content);
@@ -424,10 +420,41 @@ export function ChatWidget({
             }
             
             setMessages(prev => {
+              // Double check if message already exists by ID
               if (prev.some(msg => msg.id === newMessage.id)) {
-                console.log('Message already in state, skipping:', newMessage.id);
+                console.log('Message already in state by ID, skipping:', newMessage.id);
                 return prev;
               }
+              
+              // Also check for potential duplicate content (same content within 5 seconds)
+              const isDuplicateContent = prev.some(msg => 
+                msg.role === 'assistant' && 
+                msg.content === newMessage.content &&
+                Math.abs(new Date(msg.timestamp).getTime() - new Date(newMessage.created_at).getTime()) < 5000
+              );
+              
+              if (isDuplicateContent) {
+                console.log('Potential duplicate content detected, skipping:', newMessage.content);
+                return prev;
+              }
+              
+              // Special check for welcome messages - if this looks like a welcome message and we already have one
+              const isWelcomeMessage = newMessage.content.toLowerCase().includes('hello') || 
+                                    newMessage.content.toLowerCase().includes('hi there') ||
+                                    newMessage.content.toLowerCase().includes('help you');
+              
+              if (isWelcomeMessage && welcomeShownRef.current) {
+                console.log('Duplicate welcome message detected, skipping:', newMessage.content);
+                return prev;
+              }
+              
+              // If this is a welcome message from n8n, mark it as shown
+              if (isWelcomeMessage) {
+                welcomeShownRef.current = true;
+              }
+              
+              // Add to processed set
+              processedIdsRef.current.add(newMessage.id);
               
               return [...prev, {
                 id: newMessage.id,
@@ -453,7 +480,7 @@ export function ChatWidget({
         supabaseRef.current?.removeChannel(channelRef.current);
       }
     };
-  }, [sessionId, messages])
+  }, [sessionId])
   
   /* ────────────── realtime session updates ────────────── */
   useEffect(() => {
@@ -590,19 +617,26 @@ export function ChatWidget({
         }))
         setMessages(formattedMessages)
         
-        // Add message IDs to processed set
+        // Clear and re-populate processed set with current message IDs
+        processedIdsRef.current.clear()
         messagesResult.data.forEach(msg => processedIdsRef.current.add(msg.id))
+        
+        // Mark welcome as shown since we have existing messages
+        welcomeShownRef.current = true
       } else {
-        // Add welcome message if no history
+        // Always show welcome message for empty chat history
         const welcomeId = `welcome_${Date.now()}`
         setMessages([{
           id: welcomeId,
           role: 'assistant',
           content: welcomeMessage,
           timestamp: new Date().toISOString(),
-          metadata: { isWelcome: true }
+          metadata: { isWelcome: true, source: 'client' }
         }])
+        // Clear and set only welcome message ID
+        processedIdsRef.current.clear()
         processedIdsRef.current.add(welcomeId)
+        welcomeShownRef.current = true
       }
     } catch (err) {
       console.error('Failed to load chat history:', err)

@@ -1,13 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useSupabase } from '@/lib/supabase/context'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { formatDistanceToNow } from 'date-fns'
-import { MessageSquare, Users, BarChart, Activity, AlertCircle, Clock, UserCheck } from 'lucide-react'
+import { MessageSquare, Users, BarChart, Activity, AlertCircle, Clock, UserCheck, Search, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import Link from 'next/link'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -73,8 +75,18 @@ const formatHour = (hourString: string): string => {
 
 export default function ChatsPage() {
   const { user, userRole, isLoading: authLoading, supabase } = useSupabase()
+  const searchParams = useSearchParams()
+  
+  // Get initial state from URL parameters
+  const initialTab = searchParams.get('tab') || (userRole === 'Support Agent' ? 'handoffs' : 'overview')
+  const initialSearch = searchParams.get('search') || ''
+  
   const [sessions, setSessions] = useState<ChatSession[]>([])
+  const [filteredSessions, setFilteredSessions] = useState<ChatSession[]>([])
   const [pendingHandoffs, setPendingHandoffs] = useState<ChatSession[]>([])
+  const [searchQuery, setSearchQuery] = useState(initialSearch)
+  const [activeTab, setActiveTab] = useState(initialTab)
+  const [isSearching, setIsSearching] = useState(false)
   const [stats, setStats] = useState<ChatStats>({
     total_sessions: 0,
     active_sessions: 0,
@@ -91,6 +103,124 @@ export default function ChatsPage() {
   // Check if user has access to this page
   const hasAccess = ALLOWED_ROLES.includes(userRole as string)
   const isSupportAgent = userRole === 'Support Agent'
+
+  // Search functionality
+  const performSearch = useCallback(async (query: string) => {
+    if (!supabase || !query.trim()) {
+      setFilteredSessions(sessions)
+      return
+    }
+
+    setIsSearching(true)
+    try {
+      // Search in chat sessions metadata and user identifiers
+      const sessionResults = sessions.filter(session => 
+        session.user_identifier?.toLowerCase().includes(query.toLowerCase()) ||
+        session.chatbot_name?.toLowerCase().includes(query.toLowerCase()) ||
+        session.platform?.toLowerCase().includes(query.toLowerCase()) ||
+        session.status?.toLowerCase().includes(query.toLowerCase())
+      )
+
+      // Search in chat messages content
+      const { data: messageResults, error: messageError } = await supabase
+        .from('chat_messages')
+        .select(`
+          session_id,
+          content,
+          chat_sessions!inner(
+            *,
+            chatbots(name)
+          )
+        `)
+        .ilike('content', `%${query}%`)
+        .limit(100)
+
+      if (messageError) {
+        console.warn('Error searching messages:', messageError)
+      }
+
+      // Get unique session IDs from message search results
+      const messageSessionIds = new Set(
+        (messageResults || []).map(msg => msg.session_id)
+      )
+
+      // Combine results from both searches
+      const messageMatchingSessions = sessions.filter(session => 
+        messageSessionIds.has(session.session_id)
+      )
+
+      // Merge and deduplicate results
+      const allResults = [...sessionResults]
+      messageMatchingSessions.forEach(session => {
+        if (!allResults.find(s => s.session_id === session.session_id)) {
+          allResults.push(session)
+        }
+      })
+
+      // Sort by relevance (exact matches first, then by last activity)
+      allResults.sort((a, b) => {
+        const aExact = a.user_identifier?.toLowerCase().includes(query.toLowerCase()) ||
+                      a.chatbot_name?.toLowerCase().includes(query.toLowerCase())
+        const bExact = b.user_identifier?.toLowerCase().includes(query.toLowerCase()) ||
+                      b.chatbot_name?.toLowerCase().includes(query.toLowerCase())
+        
+        if (aExact && !bExact) return -1
+        if (!aExact && bExact) return 1
+        
+        return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+      })
+
+      setFilteredSessions(allResults)
+    } catch (error) {
+      console.error('Search error:', error)
+      setFilteredSessions(sessions)
+    } finally {
+      setIsSearching(false)
+    }
+  }, [sessions, supabase])
+
+  // Handle search input changes with debounce
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (searchQuery.trim()) {
+        performSearch(searchQuery)
+      } else {
+        setFilteredSessions(sessions)
+      }
+    }, 300)
+
+    return () => clearTimeout(timeoutId)
+  }, [searchQuery, performSearch, sessions])
+
+  // Clear search
+  const clearSearch = () => {
+    setSearchQuery('')
+    setFilteredSessions(sessions)
+    updateUrlParams('', activeTab)
+  }
+
+  // Update URL parameters to preserve state
+  const updateUrlParams = (search: string, tab: string) => {
+    const params = new URLSearchParams()
+    if (search) params.set('search', search)
+    if (tab !== (userRole === 'Support Agent' ? 'handoffs' : 'overview')) {
+      params.set('tab', tab)
+    }
+    const newUrl = `/dashboard/chats${params.toString() ? `?${params.toString()}` : ''}`
+    window.history.replaceState({}, '', newUrl)
+  }
+
+  // Handle tab change
+  const handleTabChange = (newTab: string) => {
+    setActiveTab(newTab)
+    updateUrlParams(searchQuery, newTab)
+  }
+
+  // Handle search query change
+  const handleSearchChange = (newQuery: string) => {
+    setSearchQuery(newQuery)
+    updateUrlParams(newQuery, activeTab)
+  }
 
   // Load chat sessions and stats
   useEffect(() => {
@@ -138,6 +268,7 @@ export default function ChatsPage() {
         )
         
         setSessions(sessionsWithCounts)
+        setFilteredSessions(sessionsWithCounts) // Initialize filtered sessions
         
         // Get pending handoff sessions (for Support Agents)
         if (isSupportAgent) {
@@ -338,7 +469,7 @@ export default function ChatsPage() {
         </div>
       )}
 
-      <Tabs defaultValue={isSupportAgent ? "handoffs" : "overview"} className="w-full mb-8">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full mb-8">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="sessions">Chat Sessions</TabsTrigger>
@@ -463,7 +594,7 @@ export default function ChatsPage() {
                               {session.status}
                             </Badge>
                             <Button variant="outline" size="sm" asChild>
-                              <Link href={`/dashboard/chats/${session.session_id}`}>
+                              <Link href={`/dashboard/chats/${session.session_id}?returnTab=${activeTab}${searchQuery ? `&returnSearch=${encodeURIComponent(searchQuery)}` : ''}`}>
                                 View
                               </Link>
                             </Button>
@@ -515,7 +646,43 @@ export default function ChatsPage() {
         <TabsContent value="sessions" className="pt-4">
           <Card>
             <CardHeader>
-              <CardTitle>All Chat Sessions</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle>All Chat Sessions</CardTitle>
+                <div className="relative w-96">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Input
+                      placeholder="Search by user, chatbot, message content..."
+                      value={searchQuery}
+                      onChange={(e) => handleSearchChange(e.target.value)}
+                      className="pl-10 pr-10"
+                    />
+                    {searchQuery && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={clearSearch}
+                        className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 hover:bg-muted"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                  {isSearching && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              {searchQuery && (
+                <div className="text-sm text-muted-foreground">
+                  {filteredSessions.length} result{filteredSessions.length !== 1 ? 's' : ''} found
+                  {filteredSessions.length > 0 && searchQuery && (
+                    <span> for &ldquo;{searchQuery}&rdquo;</span>
+                  )}
+                </div>
+              )}
             </CardHeader>
             <CardContent>
               {loading ? (
@@ -524,9 +691,9 @@ export default function ChatsPage() {
                     <Skeleton key={i} className="h-12 w-full" />
                   ))}
                 </div>
-              ) : sessions.length === 0 ? (
+              ) : filteredSessions.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  No chat sessions found
+                  {searchQuery ? 'No sessions found matching your search.' : 'No chat sessions found'}
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -543,7 +710,7 @@ export default function ChatsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {sessions.map((session) => (
+                      {filteredSessions.map((session) => (
                         <tr key={session.session_id} className="border-b hover:bg-slate-50">
                           <td className="py-3 px-2">
                             <div className="font-medium">
@@ -572,7 +739,7 @@ export default function ChatsPage() {
                           </td>
                           <td className="py-3 px-2 text-right">
                             <Button variant="outline" size="sm" asChild>
-                              <Link href={`/dashboard/chats/${session.session_id}`}>
+                              <Link href={`/dashboard/chats/${session.session_id}?returnTab=${activeTab}${searchQuery ? `&returnSearch=${encodeURIComponent(searchQuery)}` : ''}`}>
                                 View
                               </Link>
                             </Button>
@@ -661,7 +828,7 @@ export default function ChatsPage() {
                               asChild
                               className="bg-blue-600 hover:bg-blue-700"
                             >
-                              <Link href={`/dashboard/chats/${session.session_id}`}>
+                              <Link href={`/dashboard/chats/${session.session_id}?returnTab=${activeTab}${searchQuery ? `&returnSearch=${encodeURIComponent(searchQuery)}` : ''}`}>
                                 Take Over Chat
                               </Link>
                             </Button>

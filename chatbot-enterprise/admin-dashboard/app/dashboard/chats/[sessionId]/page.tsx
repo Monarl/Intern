@@ -6,7 +6,7 @@ import {
   useRef,
   useCallback,
 } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useSearchParams } from 'next/navigation'
 import { useSupabase } from '@/lib/supabase/context'
 import {
   Card,
@@ -91,7 +91,12 @@ type ChatSession = {
 // ────── Component ───────────────────────────────────────────────────────────
 export default function ChatSessionDetailPage() {
   const params = useParams()
+  const searchParams = useSearchParams()
   const sessionId = params.sessionId as string
+  
+  // Get return navigation parameters
+  const returnTab = searchParams.get('returnTab') || 'overview'
+  const returnSearch = searchParams.get('returnSearch') || ''
 
   const {
     user,
@@ -489,7 +494,7 @@ export default function ChatSessionDetailPage() {
           asChild
           className="mr-4"
         >
-          <Link href="/dashboard/chats">
+          <Link href={`/dashboard/chats?tab=${returnTab}${returnSearch ? `&search=${encodeURIComponent(returnSearch)}` : ''}`}>
             <ArrowLeft size={16} className="mr-2" /> Back to
             Chats
           </Link>

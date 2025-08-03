@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation'
 import { ChevronLeft, Trash2, FileText, Globe, ShieldAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'sonner'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useSupabase } from '@/lib/supabase/context'
+import BulkDeleteDocumentsDialog from '@/components/knowledge-base/bulk-delete-docs-dialog'
 
 interface Document {
   id: string
@@ -38,6 +40,11 @@ export default function DocumentsPage({ params }: { params: Promise<{ id: string
   const [loading, setLoading] = useState(true)
   const [knowledgeBase, setKnowledgeBase] = useState<KnowledgeBase | null>(null)
   const [documents, setDocuments] = useState<Document[]>([])
+  
+  // Bulk operations state
+  const [isSelectionMode, setIsSelectionMode] = useState(false)
+  const [selectedDocIds, setSelectedDocIds] = useState<Set<string>>(new Set())
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false)
   
   const fetchData = useCallback(async () => {
     // Skip API call if user doesn't have any role
@@ -116,6 +123,69 @@ export default function DocumentsPage({ params }: { params: Promise<{ id: string
       toast.error(error instanceof Error ? error.message : 'Failed to delete document')
     }
   }
+  
+  // Bulk operations handlers
+  async function handleBulkDeleteDocuments() {
+    if (!knowledgeBase || selectedDocIds.size === 0) return
+    
+    try {
+      const response = await fetch(`/api/knowledge-base/documents/bulk-delete`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          knowledge_base_id: knowledgeBase.id,
+          document_ids: Array.from(selectedDocIds)
+        }),
+      })
+      
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to delete documents')
+      }
+      
+      toast.success(`${selectedDocIds.size} document${selectedDocIds.size > 1 ? 's' : ''} deleted`)
+      fetchData() // Refresh the list
+      setBulkDeleteDialogOpen(false)
+      exitSelectionMode()
+    } catch (error) {
+      console.error('Error deleting documents:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to delete documents')
+    }
+  }
+
+  // Selection handlers
+  function toggleDocSelection(docId: string) {
+    const newSelected = new Set(selectedDocIds)
+    if (newSelected.has(docId)) {
+      newSelected.delete(docId)
+    } else {
+      newSelected.add(docId)
+    }
+    setSelectedDocIds(newSelected)
+  }
+
+  function selectAllDocs() {
+    setSelectedDocIds(new Set(documents.map(doc => doc.id)))
+  }
+
+  function clearSelection() {
+    setSelectedDocIds(new Set())
+  }
+
+  function enterSelectionMode() {
+    setIsSelectionMode(true)
+    setSelectedDocIds(new Set())
+  }
+
+  function exitSelectionMode() {
+    setIsSelectionMode(false)
+    setSelectedDocIds(new Set())
+  }
+
+  // Computed properties
+  const selectedDocumentsData = documents.filter(doc => selectedDocIds.has(doc.id))
   
   function getDocumentIcon(document: Document) {
     return document.file_path ? <FileText className="h-5 w-5" /> : <Globe className="h-5 w-5" />
@@ -229,9 +299,47 @@ export default function DocumentsPage({ params }: { params: Promise<{ id: string
           <div className="text-muted-foreground">
             <Skeleton className="h-6 w-60" />
           </div>
+        ) : isSelectionMode ? (
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-muted-foreground">
+              {selectedDocIds.size} of {documents.length} document{documents.length !== 1 ? 's' : ''} selected
+            </span>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={selectAllDocs}>
+                Select All
+              </Button>
+              <Button size="sm" variant="outline" onClick={clearSelection}>
+                Clear
+              </Button>
+              <Button size="sm" variant="outline" onClick={exitSelectionMode}>
+                Cancel
+              </Button>
+              {hasEditPermission && (
+                <Button 
+                  size="sm" 
+                  variant="destructive"
+                  disabled={selectedDocIds.size === 0}
+                  onClick={() => setBulkDeleteDialogOpen(true)}
+                >
+                  Delete Selected ({selectedDocIds.size})
+                </Button>
+              )}
+            </div>
+          </div>
         ) : (
-          <div className="text-muted-foreground">
-            {`${documents.length} document${documents.length !== 1 ? 's' : ''}`}
+          <div className="flex items-center justify-between w-full">
+            <div className="text-muted-foreground">
+              {`${documents.length} document${documents.length !== 1 ? 's' : ''}`}
+            </div>
+            {hasEditPermission && documents.length > 0 && (
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={enterSelectionMode}
+              >
+                Select Multiple
+              </Button>
+            )}
           </div>
         )}
       </div>
@@ -262,9 +370,22 @@ export default function DocumentsPage({ params }: { params: Promise<{ id: string
       ) : (
         <div className="grid grid-cols-1 gap-4">
           {documents.map((doc) => (
-            <Card key={doc.id} className="overflow-hidden">
+            <Card 
+              key={doc.id} 
+              className={`overflow-hidden transition-all ${
+                isSelectionMode && selectedDocIds.has(doc.id) 
+                  ? 'ring-2 ring-primary bg-primary/5' 
+                  : ''
+              }`}
+            >
               <CardHeader className="flex flex-row items-center justify-between py-4">
                 <div className="flex items-center gap-2">
+                  {isSelectionMode && (
+                    <Checkbox
+                      checked={selectedDocIds.has(doc.id)}
+                      onCheckedChange={() => toggleDocSelection(doc.id)}
+                    />
+                  )}
                   {getDocumentIcon(doc)}
                   <div>
                     <h3 className="font-medium">{doc.title}</h3>
@@ -282,23 +403,32 @@ export default function DocumentsPage({ params }: { params: Promise<{ id: string
                   Added: {new Date(doc.created_at).toLocaleDateString()}
                 </p>
               </CardContent>
-              <CardFooter className="flex justify-end py-2">
-                {hasEditPermission && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    className="text-red-500"
-                    onClick={() => handleDeleteDocument(doc)}
-                  >
-                    <Trash2 className="h-4 w-4 mr-1" />
-                    Delete
-                  </Button>
-                )}
-              </CardFooter>
+              {!isSelectionMode && (
+                <CardFooter className="flex justify-end py-2">
+                  {hasEditPermission && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      className="text-red-500"
+                      onClick={() => handleDeleteDocument(doc)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Delete
+                    </Button>
+                  )}
+                </CardFooter>
+              )}
             </Card>
           ))}
         </div>
       )}
+
+      <BulkDeleteDocumentsDialog
+        open={bulkDeleteDialogOpen}
+        onOpenChange={setBulkDeleteDialogOpen}
+        documents={selectedDocumentsData}
+        onConfirm={handleBulkDeleteDocuments}
+      />
     </div>
   )
 }
