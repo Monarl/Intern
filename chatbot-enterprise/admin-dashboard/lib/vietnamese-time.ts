@@ -75,17 +75,17 @@ export class VietnameseTime {
   }
 
   /**
-   * Format as relative time in Vietnamese
+   * Format as relative time in English
    */
   static relative(date: Date | string): string {
     const dateObj = typeof date === 'string' ? new Date(date) : date
     const now = new Date()
     const diffInMinutes = Math.floor((now.getTime() - dateObj.getTime()) / (1000 * 60))
     
-    if (diffInMinutes < 1) return 'vừa xong'
-    if (diffInMinutes < 60) return `${diffInMinutes} phút trước`
-    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)} giờ trước`
-    if (diffInMinutes < 10080) return `${Math.floor(diffInMinutes / 1440)} ngày trước`
+    if (diffInMinutes < 1) return 'just now'
+    if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)} hours ago`
+    if (diffInMinutes < 10080) return `${Math.floor(diffInMinutes / 1440)} days ago`
     
     return VietnameseTime.format(dateObj, 'date')
   }

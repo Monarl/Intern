@@ -13,6 +13,7 @@ import {
   Menu,
   X,
   Bot,
+  Plug,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -46,6 +47,11 @@ const navItems: NavItem[] = [
     title: 'Chatbots',
     href: '/dashboard/chatbots',
     icon: <Bot className="h-5 w-5" />,
+  },
+  {
+    title: 'Integrations',
+    href: '/dashboard/integrations',
+    icon: <Plug className="h-5 w-5" />,
   },
   {
     title: 'Chats',

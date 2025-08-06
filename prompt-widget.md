@@ -1,16 +1,3 @@
-** Later
-Rules:
-+ Check the ui/components for the shadcn components. If you want another components then instlal it using shadcn not shadcn/ui.
-+ When import, always check the path to make sure the import is correct. 
-+ Before moving on to another file, you have to make sure the current file is error-free.
-+ Do not make any unneccesary files and folders.
-+ Do not run npm run dev and npm run build to check for errors.
----
-In the current dashboard layout.tsx there is the options titled Documents. Now i want to replace this with Chatbots for creating, managing and deleting chatbots. The page implemetation will be done in the chatbots folder and integrated the chatbot widget from the chat-widgets folder.
-+ This page is only for super admin and chatbot manager so remember to do RBAC. You can reference the RBAC from the chats folder.
-+ A chatbot can has the styling, position, knowledge base,... that is listed from the chat-widget README.md configured. Read it and provide an interface to set these parameters when create the chatbot. The default for supabase and n8n related parameter should be set to our current env.local, use the name not the direct api values.
-+ The integrated chat widget should work exactly like when i run the chat-widget folder on localhost:3001 to chat using the widget.
-
 Later:
 ### Coding Rules (apply to all changes)
 1. Use only shadcn components in ui/components; if a component is missing, install it with `shadcn add`, **not** `@shadcn/ui`.
@@ -28,5 +15,15 @@ Later:
     + **Thông báo**: Gửi thông báo đến nhân viên CS khi có cuộc trò chuyện cần được tiếp quản.
     + **Chuyển giao lại bot**: Sau khi nhân viên CS hoàn tất hỗ trợ, họ có thể chuyển cuộc trò chuyện trở lại cho chatbot nếu phù hợp.
 ### Future:
-- **Facebook Messenger, Instagram Messenger, WhatsApp, Viber, Zalo (cá nhân), Zalo OA**: Cung cấp các công cụ và hướng dẫn để tích hợp chatbot với các nền tảng này thông qua API của từng nền tảng.
+#### Coding Rules (apply to all changes)
+1. Use only shadcn components in ui/components; if a component is missing, install it with `shadcn add`, **not** `@shadcn/ui`.
+2. Always confirm import paths are correct.
+3. Finish one file without TypeScript errors before editing the next.
+4. Do not run `npm run dev` or `npm run build`.
+
+### Implement above requirements
+- Read the section 1.3 Tạo và quản lý Chatbot in chatbot-enterprise/Chatbot_DoanhNghiep.md.
+- Now i want to implement the functionality listed in "Tích hợp với các nền tảng nhắn tin" in section 1.3 but only for Facebook Messenger. Read the codebase and use brave mcp to check for the api documentation and supabase mcp to check our database
+- Remember to give documentation explain in detail what you have implemented.
+#codebase #supabase #brave-search
 

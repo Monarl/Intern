@@ -55,17 +55,17 @@ export function getCurrentVietnameseTime(): string {
 }
 
 /**
- * Format relative time in Vietnamese context
+ * Format relative time in English context
  */
 export function formatRelativeTime(timestamp: string): string {
   const date = new Date(timestamp)
   const now = new Date()
   const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60))
   
-  if (diffInMinutes < 1) return 'vừa xong'
-  if (diffInMinutes < 60) return `${diffInMinutes} phút trước`
-  if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)} giờ trước`
-  if (diffInMinutes < 10080) return `${Math.floor(diffInMinutes / 1440)} ngày trước`
+  if (diffInMinutes < 1) return 'just now'
+  if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`
+  if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)} hours ago`
+  if (diffInMinutes < 10080) return `${Math.floor(diffInMinutes / 1440)} days ago`
   
   return formatVietnameseDate(timestamp)
 }
