@@ -2,7 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { FacebookMessengerConfig } from '@/components/integrations/facebook-messenger-config';
+import { ChatbotRoleGuard } from '@/components/chatbots/chatbot-role-guard';
 import { toast } from 'sonner';
+
+// Role-based access control
+const ALLOWED_ROLES = ['Super Admin', 'Chatbot Manager'];
 
 interface FacebookPageSettings {
   auto_reply: boolean;
@@ -166,14 +170,19 @@ export default function FacebookIntegrationPage() {
   }
 
   return (
-    <div className="container mx-auto py-6">
-      <FacebookMessengerConfig
-        pages={pages}
-        chatbots={chatbots}
-        onSave={handleSave}
-        onDelete={handleDelete}
-        onTest={handleTest}
-      />
-    </div>
+    <ChatbotRoleGuard
+      allowedRoles={ALLOWED_ROLES}
+      fallbackMessage="You do not have permission to access Facebook integration. Only Super Admin and Chatbot Manager can manage platform integrations."
+    >
+      <div className="container mx-auto py-6">
+        <FacebookMessengerConfig
+          pages={pages}
+          chatbots={chatbots}
+          onSave={handleSave}
+          onDelete={handleDelete}
+          onTest={handleTest}
+        />
+      </div>
+    </ChatbotRoleGuard>
   );
 }

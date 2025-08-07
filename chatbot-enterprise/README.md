@@ -234,6 +234,32 @@ The chat widget can be embedded into any website using iframe or JavaScript inte
 - **Custom Configuration**: Configure chatbot settings and appearance
 - **Multiple Integration Methods**: Choose between iframe and JavaScript embedding
 
+## 📱 Facebook Messenger Integration
+
+The system includes comprehensive Facebook Messenger integration, allowing your chatbots to automatically respond to messages sent to your Facebook Pages.
+
+### Features
+- **Multi-Page Support**: Manage multiple Facebook Pages from a single dashboard
+- **Automatic Responses**: Seamless integration with your chatbot's RAG system
+- **Secure Webhook Verification**: Facebook-compliant webhook verification and message processing
+- **Message Logging**: Complete audit trail of all interactions
+- **n8n Integration**: Leverages n8n workflows for advanced message processing
+
+### Setup Requirements
+- Facebook Developer App with Messenger product enabled
+- Facebook Page with admin access
+- Valid Page Access Token and App credentials
+- HTTPS webhook URL (use ngrok for local development)
+
+### Admin Dashboard Integration
+Access Facebook Messenger configuration through:
+- **Main Integration Hub**: `/dashboard/integrations`
+- **Facebook Management**: `/dashboard/integrations/facebook`
+
+The integration supports creating, testing, and managing multiple Facebook Page configurations with individual chatbot assignments.
+
+For complete setup instructions, API details, troubleshooting guides, and security considerations, see [Facebook Messenger Integration Documentation](./docs/facebook-messenger-integration.md).
+
 ## 🤝 Contributing
 
 1. Follow the n8n-first philosophy

@@ -4,6 +4,10 @@ import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { ChatbotRoleGuard } from '@/components/chatbots/chatbot-role-guard';
+
+// Role-based access control
+const ALLOWED_ROLES = ['Super Admin', 'Chatbot Manager'];
 
 const integrations = [
   {
@@ -93,7 +97,11 @@ const getStatusBadge = (status: string) => {
 
 export default function IntegrationsPage() {
   return (
-    <div className="space-y-6">
+    <ChatbotRoleGuard
+      allowedRoles={ALLOWED_ROLES}
+      fallbackMessage="You do not have permission to access integrations. Only Super Admin and Chatbot Manager can manage platform integrations."
+    >
+      <div className="space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold">Platform Integrations</h1>
@@ -196,5 +204,6 @@ export default function IntegrationsPage() {
         </CardContent>
       </Card>
     </div>
+    </ChatbotRoleGuard>
   );
 }

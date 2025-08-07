@@ -194,6 +194,13 @@ export function FacebookMessengerConfig({
     return '/api/webhooks/facebook';
   };
 
+  const isLocalhost = () => {
+    if (typeof window !== 'undefined') {
+      return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    }
+    return false;
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -217,6 +224,15 @@ export function FacebookMessengerConfig({
           <strong>Webhook URL:</strong> {getWebhookUrl()}
           <br />
           Use this URL when configuring webhooks in your Facebook App.
+          {isLocalhost() && (
+            <>
+              <br />
+              <br />
+              <span className="text-amber-600 font-medium">⚠️ Warning:</span> Your current URL uses localhost. 
+              Facebook requires HTTPS URLs for webhooks. Please use ngrok or deploy to a domain with HTTPS 
+              to set up Facebook webhooks properly.
+            </>
+          )}
         </AlertDescription>
       </Alert>
 

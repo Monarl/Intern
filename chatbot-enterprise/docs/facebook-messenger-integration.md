@@ -82,13 +82,13 @@ CREATE TABLE facebook_webhook_logs (
 
 2. **Configure Messenger Product**
    - In App Dashboard, go to "Products" → "Messenger" → "Settings"
-   - Scroll to "Access Tokens" section
-   - Click "Add or Remove Pages" and connect your Facebook Page
+   - Scroll to "Create Access Tokens" section
+   - Click "Add Pages" and connect your Facebook Page
    - Click "Generate Token" next to your page (this is your Page Access Token)
    - Copy and save this token (starts with "EAA...")
 
 3. **Get App ID and App Secret**
-   - In App Dashboard, go to "Settings" → "Basic"
+   - In App Dashboard, go to "App Settings" → "Basic"
    - Copy your "App ID" (this is your Facebook App ID)
    - Click "Show" next to "App Secret" (this is your Facebook App Secret)
    - Save both values securely
@@ -101,11 +101,10 @@ CREATE TABLE facebook_webhook_logs (
    - In the "General" tab, look for "Page ID"
    - Copy the numeric ID
 
-2. **Method 2: From Page About Section**
-   - Go to your Facebook Page
-   - Click "About" tab
-   - Scroll down to find "Page Transparency" section
-   - The Page ID is listed there
+2. **Method 2: From Added Page in Messenger Settings**
+   - In App Dashboard, go to "Products" → "Messenger" → "Settings"
+   - Scroll to "Create Access Tokens" section
+   - Under the previous added page, you will see the Page ID listed
 
 3. **Method 3: From URL**
    - Go to your Facebook Page
@@ -121,9 +120,9 @@ CREATE TABLE facebook_webhook_logs (
 2. **Fill Configuration Form**
    ```
    - Display Name: Your page display name (e.g., "My Business Page")
-   - Facebook Page ID: Your page ID (found in page settings or About section)
+   - Facebook Page ID: Your page ID (read step 2 above)
    - Page Access Token: Token generated in step 1 (starts with "EAA")
-   - Facebook App ID: From your Facebook app dashboard (numeric ID)
+   - Facebook App ID: From your Facebook app → Settings → Basic
    - Facebook App Secret: From your Facebook app → Settings → Basic
    - Verify Token: Click "Generate Token" or create your own custom string
    - Linked Chatbot: Select which chatbot to use for responses
