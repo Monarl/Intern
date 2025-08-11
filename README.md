@@ -67,8 +67,15 @@ A comprehensive enterprise chatbot system with RAG (Retrieval Augmented Generati
    - Admin Dashboard: http://localhost:3000
    - Chat Widget: http://localhost:3001  
    - n8n Editor: http://localhost:5678
-   n8n start
    ```
+   
+6. **Set up n8n**
+   - Open n8n editor at http://localhost:5678
+   - Import workflows from `chatbot-enterprise/n8n-workflows/`
+   - Configure webhooks and credentials as needed
+   
+7. **Database Setup**
+
 
 ## 📊 Database Schema
 
@@ -204,7 +211,7 @@ The Knowledge Base system allows storing and retrieving information from various
 - **Toast Notifications**: Feedback for all operations
 - **Status Indicators**: Processing, completed, and error states for documents
 
-For detailed UI documentation, see [Knowledge Base UI](./docs/knowledge-base-ui.md).
+For detailed UI documentation, see [Knowledge Base UI](./chatbot-enterprise/docs/knowledge-base-ui.md).
 
 ### API Endpoints
 
@@ -216,7 +223,7 @@ For detailed UI documentation, see [Knowledge Base UI](./docs/knowledge-base-ui.
 - `GET /api/knowledge-base/documents/[id]` - Get documents for a knowledge base
 - `DELETE /api/knowledge-base/document/[id]` - Delete a specific document
 
-For detailed API documentation, see [Knowledge Base API](./docs/knowledge-base-api.md).
+For detailed API documentation, see [Knowledge Base API](./chatbot-enterprise/docs/knowledge-base-api.md).
 
 ### n8n Integration
 
@@ -258,7 +265,7 @@ Access Facebook Messenger configuration through:
 
 The integration supports creating, testing, and managing multiple Facebook Page configurations with individual chatbot assignments.
 
-For complete setup instructions, API details, troubleshooting guides, and security considerations, see [Facebook Messenger Integration Documentation](./docs/facebook-messenger-integration.md).
+For complete setup instructions, API details, troubleshooting guides, and security considerations, see [Facebook Messenger Integration Documentation](./chatbot-enterprise/docs/facebook-messenger-integration.md).
 
 ## 🤝 Contributing
 

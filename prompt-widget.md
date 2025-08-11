@@ -15,15 +15,10 @@ Later:
     + **Thông báo**: Gửi thông báo đến nhân viên CS khi có cuộc trò chuyện cần được tiếp quản.
     + **Chuyển giao lại bot**: Sau khi nhân viên CS hoàn tất hỗ trợ, họ có thể chuyển cuộc trò chuyện trở lại cho chatbot nếu phù hợp.
 ### Future:
-#### Coding Rules (apply to all changes)
-1. Use only shadcn components in ui/components; if a component is missing, install it with `shadcn add`, **not** `@shadcn/ui`.
-2. Always confirm import paths are correct.
-3. Finish one file without TypeScript errors before editing the next.
-4. Do not run `npm run dev` or `npm run build`.
+## Rules
+- Since I am asking, you should not make any edit.
 
-### Implement above requirements
-- Read the section 1.3 Tạo và quản lý Chatbot in chatbot-enterprise/Chatbot_DoanhNghiep.md.
-- Now i want to implement the functionality listed in "Tích hợp với các nền tảng nhắn tin" in section 1.3 but only for Facebook Messenger. Read the codebase and use brave mcp to check for the api documentation and supabase mcp to check our database
-- Remember to give documentation explain in detail what you have implemented.
-#codebase #supabase #brave-search
+## Question to ask:
 
+
+- Create the sql to create the current database schema and functions in supabase and add the guide to run it in the readme file.

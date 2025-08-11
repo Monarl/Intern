@@ -65,10 +65,13 @@ export async function POST(request: NextRequest) {
       errors: []
     };
 
+    const facebookApiBase = process.env.FACEBOOK_GRAPH_API_BASE_URL || 'https://graph.facebook.com'
+    const facebookApiVersion = process.env.FACEBOOK_API_VERSION || 'v18.0'
+
     try {
       // Test 1: Get page information
       const pageInfoResponse = await fetch(
-        `https://graph.facebook.com/v18.0/${page.page_id}?fields=id,name,category,verification_status,link&access_token=${page.page_access_token}`
+        `${facebookApiBase}/${facebookApiVersion}/${page.page_id}?fields=id,name,category,verification_status,link&access_token=${page.page_access_token}`
       );
       
       if (pageInfoResponse.ok) {
@@ -84,7 +87,7 @@ export async function POST(request: NextRequest) {
     try {
       // Test 2: Check webhook subscriptions
       const webhookResponse = await fetch(
-        `https://graph.facebook.com/v18.0/${page.page_id}/subscribed_apps?access_token=${page.page_access_token}`
+        `${facebookApiBase}/${facebookApiVersion}/${page.page_id}/subscribed_apps?access_token=${page.page_access_token}`
       );
       
       if (webhookResponse.ok) {
@@ -101,7 +104,7 @@ export async function POST(request: NextRequest) {
     try {
       // Test 3: Check token permissions
       const permissionsResponse = await fetch(
-        `https://graph.facebook.com/v18.0/me/permissions?access_token=${page.page_access_token}`
+        `${facebookApiBase}/${facebookApiVersion}/me/permissions?access_token=${page.page_access_token}`
       );
       
       if (permissionsResponse.ok) {

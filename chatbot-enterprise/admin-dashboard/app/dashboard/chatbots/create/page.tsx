@@ -43,7 +43,9 @@ export default function CreateChatbotPage() {
   // Form state
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [n8nWebhookUrl, setN8nWebhookUrl] = useState('http://localhost:5678/webhook/rag-chat')
+  const [n8nWebhookUrl, setN8nWebhookUrl] = useState(
+    process.env.NEXT_PUBLIC_N8N_RAG_CHAT_WEBHOOK_URL || 'http://localhost:5678/webhook/rag-chat'
+  )
   const [selectedKnowledgeBases, setSelectedKnowledgeBases] = useState<string[]>([])
   const [config, setConfig] = useState<ChatbotConfig>({
     position: 'bottom-right',
@@ -216,7 +218,7 @@ export default function CreateChatbotPage() {
                     id="webhook"
                     value={n8nWebhookUrl}
                     onChange={(e) => setN8nWebhookUrl(e.target.value)}
-                    placeholder="http://localhost:5678/webhook/rag-chat"
+                    placeholder={process.env.NEXT_PUBLIC_N8N_RAG_CHAT_WEBHOOK_URL || "http://localhost:5678/webhook/rag-chat"}
                   />
                   <p className="text-sm text-muted-foreground">
                     The n8n workflow endpoint for processing chat messages
@@ -421,7 +423,7 @@ export default function CreateChatbotPage() {
                     {/* ChatWidget Preview */}
                     <ChatWidgetPreview
                       chatbotId="preview-chatbot"
-                      n8nWebhookUrl={n8nWebhookUrl || 'http://localhost:5678/webhook/rag-chat'}
+                      n8nWebhookUrl={n8nWebhookUrl || (process.env.NEXT_PUBLIC_N8N_RAG_CHAT_WEBHOOK_URL || 'http://localhost:5678/webhook/rag-chat')}
                       knowledgeBaseIds={selectedKnowledgeBases}
                       appearance={config.appearance}
                       position={config.position}

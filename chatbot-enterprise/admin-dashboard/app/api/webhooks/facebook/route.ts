@@ -334,7 +334,9 @@ async function sendFacebookMessage(pageAccessToken: string, recipientId: string,
     console.log('Message content:', message);
     console.log('Using access token:', pageAccessToken.substring(0, 20) + '...');
     
-    const response = await fetch(`https://graph.facebook.com/v18.0/me/messages`, {
+    const facebookApiBase = process.env.FACEBOOK_GRAPH_API_BASE_URL || 'https://graph.facebook.com'
+    const facebookApiVersion = process.env.FACEBOOK_API_VERSION || 'v18.0'
+    const response = await fetch(`${facebookApiBase}/${facebookApiVersion}/me/messages`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

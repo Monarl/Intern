@@ -422,7 +422,7 @@ window.ChatWidgetConfig = {
                     id="webhook"
                     value={n8nWebhookUrl}
                     onChange={(e) => setN8nWebhookUrl(e.target.value)}
-                    placeholder="http://localhost:5678/webhook/rag-chat"
+                    placeholder={process.env.NEXT_PUBLIC_N8N_RAG_CHAT_WEBHOOK_URL || "http://localhost:5678/webhook/rag-chat"}
                   />
                   <p className="text-sm text-muted-foreground">
                     The n8n workflow endpoint for processing chat messages
@@ -621,7 +621,7 @@ window.ChatWidgetConfig = {
                     {/* ChatWidget Preview */}
                     <ChatWidgetPreview
                       chatbotId={chatbotId}
-                      n8nWebhookUrl={n8nWebhookUrl || 'http://localhost:5678/webhook/rag-chat'}
+                      n8nWebhookUrl={n8nWebhookUrl || (process.env.NEXT_PUBLIC_N8N_RAG_CHAT_WEBHOOK_URL || 'http://localhost:5678/webhook/rag-chat')}
                       knowledgeBaseIds={selectedKnowledgeBases}
                       appearance={config.appearance || {
                         primaryColor: '#3b82f6',

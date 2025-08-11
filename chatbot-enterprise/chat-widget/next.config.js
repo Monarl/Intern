@@ -12,7 +12,7 @@ const nextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "frame-ancestors 'self' localhost:* 127.0.0.1:* *.vercel.app *.netlify.app;",
+            value: "frame-ancestors *;",
           },
         ],
       },
