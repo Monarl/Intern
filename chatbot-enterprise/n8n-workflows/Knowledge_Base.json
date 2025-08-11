@@ -1,19 +1,28 @@
 {
-  "name": "Knowledge Base",
   "nodes": [
     {
-      "parameters": {},
+      "parameters": {
+        "content": "## Agent Tools for RAG",
+        "height": 429,
+        "width": 483,
+        "color": 4
+      },
       "id": "2a0f8524-88f3-4402-9010-e7eb4091ff2b",
       "name": "Sticky Note",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -100,
+        20,
         60
       ]
     },
     {
-      "parameters": {},
+      "parameters": {
+        "content": "## Tool to Add File from Supabase Storage and URLs to Vector DB",
+        "height": 1847,
+        "width": 4193,
+        "color": 5
+      },
       "id": "0353efd3-64b3-421d-873c-4a29ecde3518",
       "name": "Sticky Note1",
       "type": "n8n-nodes-base.stickyNote",
@@ -30,7 +39,7 @@
       "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
       "typeVersion": 1,
       "position": [
-        -700,
+        -780,
         320
       ],
       "notesInFlow": false,
@@ -42,29 +51,67 @@
       }
     },
     {
-      "parameters": {},
+      "parameters": {
+        "content": "## RAG AI Agent with Chat Interface",
+        "height": 645,
+        "width": 1156
+      },
       "id": "3ec7ee39-38e8-43b7-b9d5-dba8ade06bb9",
       "name": "Sticky Note2",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
         -1140,
-        20
+        -160
       ]
     },
     {
-      "parameters": {},
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"response\": {{$json?.output.toJsonString() }},\n  \"sessionId\": \"{{$('Edit Fields').item.json.sessionId}}\"\n}\n",
+        "options": {}
+      },
       "id": "ec8f4116-b80f-4267-9140-8e72017cdbe0",
       "name": "Respond to Webhook",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        -280,
+        -240,
         100
       ]
     },
     {
-      "parameters": {},
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9a9a245e-f1a1-4282-bb02-a81ffe629f0f",
+              "name": "chatInput",
+              "value": "={{ $json?.chatInput || $json.body.message }}",
+              "type": "string"
+            },
+            {
+              "id": "b80831d8-c653-4203-8706-adedfdb98f77",
+              "name": "sessionId",
+              "value": "={{ $json?.sessionId || $json.body.sessionId}}",
+              "type": "string"
+            },
+            {
+              "id": "de86ec4c-de7a-4570-9b35-87cf54e1c353",
+              "name": "knowledgeId",
+              "value": "={{ $json.body.knowledgeBaseIds || []}}",
+              "type": "array"
+            },
+            {
+              "id": "b5486b1b-572f-4ebb-bbf7-f8f8ea76f8ee",
+              "name": "platform",
+              "value": "={{ $json.body.metadata.platform || \"\" }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
       "id": "832f1312-17e8-4b09-8577-530b61f2bb79",
       "name": "Edit Fields",
       "type": "n8n-nodes-base.set",
@@ -75,7 +122,10 @@
       ]
     },
     {
-      "parameters": {},
+      "parameters": {
+        "public": true,
+        "options": {}
+      },
       "id": "295099db-0fa0-4bfa-89d4-c16d9a19b5f4",
       "name": "When chat message received",
       "type": "@n8n/n8n-nodes-langchain.chatTrigger",
@@ -87,7 +137,12 @@
       "webhookId": "e104e40e-6134-4825-a6f0-8a646d882662"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "rag-chat",
+        "responseMode": "responseNode",
+        "options": {}
+      },
       "id": "ed0b1cd1-33f4-4667-a030-dc53b04a6582",
       "name": "Webhook",
       "type": "n8n-nodes-base.webhook",
@@ -99,7 +154,13 @@
       "webhookId": "bf4dd093-bb02-472c-9454-7ab9af97bd1d"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.chatinput }}",
+        "options": {
+          "systemMessage": "=You are a personal assistant who helps answer questions or sending mails with knowledge comes from a corpus of documents. The documents are either text based (Txt, docs, extracted PDFs, etc.) or tabular data (CSVs or Excel documents).\n\nWhen searching for information, focus on these extracted keywords from the user's question:\n{{ $('Code').item.json.keywords.join(', ') }}\n\nThese key phrases may also be relevant:\n{{ $('Code').item.json.phrases.join(', ') }}\n\nYou are given tools to perform RAG in the 'document_chunks' table, look up the documents available in your knowledge base in the 'document' table, extract all the text from a given document, query the tabular files with SQL in the 'document_rows' table and sending emails.\n\nAlways start by performing RAG unless the question requires a SQL query for tabular data (fetching a sum, finding a max, something a RAG lookup would be unreliable for) or the user ask to search for the whole document content or sending an email without the knowledge base knowledge. If RAG doesn't help, then look at the documents that are available to you, find a few that you think would contain the answer, and then analyze those.\n\nAlways tell the user if you didn't find the answer. Don't make something up just to please them."
+        }
+      },
       "id": "f546ae46-290f-4ded-a965-4cb02620d617",
       "name": "RAG AI Agent",
       "type": "@n8n/n8n-nodes-langchain.agent",
@@ -110,11 +171,19 @@
       ]
     },
     {
-      "parameters": {},
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this tool to fetch all available documents, including the table schema if the file is a CSV or Excel file.",
+        "operation": "executeQuery",
+        "query": "SELECT id, title, knowledge_base_id\nFROM   documents\nWHERE (\n        knowledge_base_id IN (\n          SELECT value::uuid\n          FROM   jsonb_array_elements_text($1::jsonb)\n        )\n        OR\n        NOT EXISTS (                     -- sub-query is empty?\n          SELECT 1\n          FROM   jsonb_array_elements_text($1::jsonb)\n        )\n      );\n",
+        "options": {
+          "queryReplacement": "={{ $('Edit Fields').item.json.knowledgeId }}\n"
+        }
+      },
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.5,
       "position": [
-        -560,
+        -640,
         320
       ],
       "id": "ca146add-a9cd-4ff6-9369-ddfd4a8dc2ff",
@@ -127,28 +196,45 @@
       }
     },
     {
-      "parameters": {},
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Given a documents ID, fetches the text from the document. Use List Documents tools to get the ID",
+        "operation": "executeQuery",
+        "query": "SELECT \n    string_agg(content, ' ') as document_text\nFROM document_chunks\n  WHERE document_id = $1\nGROUP BY document_id;",
+        "options": {
+          "queryReplacement": "={{ $fromAI('document_id') }}"
+        }
+      },
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.5,
       "position": [
-        -420,
+        -500,
         320
       ],
       "id": "72cfde60-750a-4c71-8129-94b576ee017a",
       "name": "Get File Contents",
+      "retryOnFail": true,
+      "waitBetweenTries": 500,
       "credentials": {
         "postgres": {
           "id": "5LPqoPG4p0V8EFcd",
           "name": "Postgres account"
         }
-      }
+      },
+      "onError": "continueRegularOutput"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Run a SQL query - use this to query from the document_rows table once you know the file ID you are querying. dataset_id is the document_id and you are always using the row_data for filtering, which is a jsonb field that has all the keys from the file schema given in the document_metadata table.\n\nExample query:\n\nSELECT AVG((row_data->>'revenue')::numeric)\nFROM document_rows\nWHERE dataset_id = '123';\n\nExample query 2:\n\nSELECT \n    row_data->>'category' as category,\n    SUM((row_data->>'sales')::numeric) as total_sales\nFROM dataset_rows\nWHERE dataset_id = '123'\nGROUP BY row_data->>'category';",
+        "operation": "executeQuery",
+        "query": "{{ $fromAI('sql_query') }}",
+        "options": {}
+      },
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.5,
       "position": [
-        -260,
+        -360,
         320
       ],
       "id": "03248fc4-af25-4485-83e9-bf4ae09cfd5b",
@@ -161,11 +247,33 @@
       }
     },
     {
-      "parameters": {},
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolName": "documents",
+        "toolDescription": "Use RAG to look up information in the knowledgebase.",
+        "tableName": {
+          "__rl": true,
+          "value": "document_chunks",
+          "mode": "list",
+          "cachedResultName": "document_chunks"
+        },
+        "topK": 10,
+        "options": {
+          "queryName": "match_documents",
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "knowledge_id",
+                "value": "={{ $('Edit Fields').item.json.knowledgeId }}"
+              }
+            ]
+          }
+        }
+      },
       "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
       "typeVersion": 1,
       "position": [
-        100,
+        220,
         280
       ],
       "id": "7f7de476-5cbb-4949-a441-8c70cfd9febe",
@@ -178,11 +286,14 @@
       }
     },
     {
-      "parameters": {},
+      "parameters": {
+        "modelName": "models/gemini-1.5-pro",
+        "options": {}
+      },
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1,
       "position": [
-        -840,
+        -920,
         320
       ],
       "id": "3fb8ae83-c0e7-4ee6-9a19-842dd817b251",
@@ -195,11 +306,13 @@
       }
     },
     {
-      "parameters": {},
+      "parameters": {
+        "modelName": "models/embedding-001"
+      },
       "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
       "typeVersion": 1,
       "position": [
-        -40,
+        80,
         340
       ],
       "id": "bbe9fcf9-4644-4b89-bc04-2a48fa6dd762",
@@ -212,7 +325,9 @@
       }
     },
     {
-      "parameters": {},
+      "parameters": {
+        "jsCode": "// Get user input using the correct n8n structure\nconst userQuery = $input.first().json.chatInput || \"\";\n\n// Important: Preserve the session ID from the chat trigger\nconst sessionId = $input.first().json.sessionId || \n                 $input.first().json.conversationId || \n                 `session_${Date.now()}`;\n\n// Define stop words\nconst STOP_WORDS = new Set([\"i\", \"me\", \"my\", \"myself\", \"we\", \"our\", \"ours\", \"ourselves\", \n  \"you\", \"your\", \"yours\", \"yourself\", \"yourselves\", \"he\", \"him\", \"his\", \"himself\", \n  \"she\", \"her\", \"hers\", \"herself\", \"it\", \"its\", \"itself\", \"they\", \"them\", \"their\", \n  \"theirs\", \"themselves\", \"what\", \"which\", \"who\", \"whom\", \"this\", \"that\", \"these\", \n  \"those\", \"am\", \"is\", \"are\", \"was\", \"were\", \"be\", \"been\", \"being\", \"have\", \"has\", \n  \"had\", \"having\", \"do\", \"does\", \"did\", \"doing\", \"a\", \"an\", \"the\", \"and\", \"but\", \n  \"if\", \"or\", \"because\", \"as\", \"until\", \"while\", \"of\", \"at\", \"by\", \"for\", \"with\", \n  \"about\", \"against\", \"between\", \"into\", \"through\", \"during\", \"before\", \"after\", \n  \"above\", \"below\", \"to\", \"from\", \"up\", \"down\", \"in\", \"out\", \"on\", \"off\", \"over\", \n  \"under\", \"again\", \"further\", \"then\", \"once\", \"here\", \"there\", \"when\", \"where\", \n  \"why\", \"how\", \"all\", \"any\", \"both\", \"each\", \"few\", \"more\", \"most\", \"other\", \n  \"some\", \"such\", \"no\", \"nor\", \"not\", \"only\", \"own\", \"same\", \"so\", \"than\", \"too\", \n  \"very\", \"can\", \"will\", \"just\", \"don\", \"should\", \"now\"]);\n\n// Simple keyword extraction\nfunction extractSimpleKeywords(text) {\n  if (!text) return [];\n  \n  const normalized = text.toLowerCase()\n    .replace(/[.,\\/#!$%\\^&\\*;:{}=\\-_`~()]/g, \" \")\n    .replace(/\\s{2,}/g, \" \")\n    .trim();\n  \n  const words = normalized.split(\" \")\n    .filter(word => word.length > 2)\n    .filter(word => !STOP_WORDS.has(word));\n  \n  const freqMap = Object.create(null);\n  words.forEach(word => {\n    freqMap[word] = (freqMap[word] || 0) + 1;\n  });\n  \n  return Object.keys(freqMap)\n    .sort((a, b) => freqMap[b] - freqMap[a])\n    .slice(0, 6);\n}\n\n// Extract n-grams (phrases)\nfunction extractNgrams(text, n = 2) {\n  if (!text) return [];\n  \n  const normalized = text.toLowerCase()\n    .replace(/[.,\\/#!$%\\^&\\*;:{}=\\-_`~()]/g, \" \")\n    .replace(/\\s{2,}/g, \" \")\n    .trim();\n  \n  const words = normalized.split(\" \");\n  const ngrams = [];\n  \n  for (let i = 0; i <= words.length - n; i++) {\n    const ngram = words.slice(i, i + n).join(\" \");\n    if (!STOP_WORDS.has(words[i]) && !STOP_WORDS.has(words[i + n - 1])) {\n      ngrams.push(ngram);\n    }\n  }\n  \n  const freqMap = Object.create(null);\n  ngrams.forEach(ngram => {\n    freqMap[ngram] = (freqMap[ngram] || 0) + 1; \n  });\n  \n  return Object.keys(freqMap)\n    .sort((a, b) => freqMap[b] - freqMap[a])\n    .slice(0, 3);\n}\n\n// Extract keywords and phrases\nconst keywords = extractSimpleKeywords(userQuery);\nconst phrases = extractNgrams(userQuery);\n\n// Combine into enhanced query\nconst enhancedQuery = [...keywords, ...phrases].join(\" \");\n\n// Return enhanced data with session ID preserved\nreturn {\n  json: {\n    chatinput: userQuery,\n    keywords: keywords,\n    phrases: phrases,\n    enhancedQuery: enhancedQuery,\n    // Critical: Pass through the session ID\n    sessionId: sessionId,\n    searchQuery: userQuery ? \n      `Find information about: ${enhancedQuery}\\n\\nOriginal question: ${userQuery}` : \n      \"No query provided\"\n  }\n};"
+      },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -223,7 +338,12 @@
       "name": "Code"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "url": "=https://zvnqtphjgzfnikviyajj.supabase.co/storage/v1/object/chatbot-documents/{{ ($json.path) }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
@@ -231,10 +351,40 @@
         800
       ],
       "id": "0a8cd2b3-466d-4b23-839c-01bea9abdad4",
-      "name": "HTTP Request"
+      "name": "HTTP Request",
+      "credentials": {
+        "supabaseApi": {
+          "id": "CAivPbO134UFXAZV",
+          "name": "Supabase account"
+        }
+      }
     },
     {
-      "parameters": {},
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d467f19d-37e4-45fb-b570-ed760f3451e1",
+              "name": "path",
+              "value": "={{ ($json.body.path) }}",
+              "type": "string"
+            },
+            {
+              "id": "c5623507-9cc7-485f-bd28-378874c23d48",
+              "name": "knowledge_base_id",
+              "value": "={{ ($json.body.knowledge_base_id) }}",
+              "type": "string"
+            },
+            {
+              "id": "b8d4dc38-a994-438e-8fef-ae9eebb9913e",
+              "name": "file_name",
+              "value": "={{ ($json.body.file_name) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
@@ -245,7 +395,25 @@
       "name": "Read webhook content"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "3924dc56-99b5-461f-8d0d-6adac4489618",
+              "name": "=extension",
+              "value": "={{$binary[\"data\"].fileExtension}}",
+              "type": "string"
+            },
+            {
+              "id": "a6b6c948-4264-42db-9bbd-59c59d96d0d4",
+              "name": "=mimeType",
+              "value": "={{$binary[\"data\"].mimeType}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
@@ -267,7 +435,123 @@
       "name": "When clicking ‘Execute workflow’"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "title": "={{ $('Read webhook content').item.json.file_name }}",
+            "knowledge_base_id": "={{ $('Read webhook content').item.json.knowledge_base_id }}",
+            "file_path": "={{ $('Read webhook content').item.json.path }}",
+            "file_type": "={{ $json.extension }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "knowledge_base_id",
+              "displayName": "knowledge_base_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "content",
+              "displayName": "content",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "file_path",
+              "displayName": "file_path",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "file_type",
+              "displayName": "file_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "metadata",
+              "displayName": "metadata",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
@@ -285,7 +569,106 @@
       }
     },
     {
-      "parameters": {},
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Extract file Extension').item.json.extension }}",
+                    "rightValue": "pdf",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "f0f66cb3-32e2-40ff-a386-9270952f1194"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "2ae7faa7-a936-4621-a680-60c512163034",
+                    "leftValue": "={{ $('Extract file Extension').item.json.extension }}",
+                    "rightValue": "xlsx",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "fc193b06-363b-4699-a97d-e5a850138b0e",
+                    "leftValue": "={{ $('Extract file Extension').item.json.extension }}",
+                    "rightValue": "csv",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "b69f5605-0179-4b02-9a32-e34bb085f82d",
+                    "leftValue": "={{ $('Extract file Extension').item.json.extension }}",
+                    "rightValue": "docx",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": 3
+        }
+      },
       "id": "e2d04302-69b2-4db8-ba80-9c7fe942e8b0",
       "name": "Switch1",
       "type": "n8n-nodes-base.switch",
@@ -296,7 +679,24 @@
       ]
     },
     {
-      "parameters": {},
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{\n{\n  \"content\": `${ $json.text }\\n---\\n${ $json.chunk }`\n}\n}}",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "file_title",
+                "value": "={{ $('Create Chunks From Doc').item.json.file_name }}"
+              },
+              {
+                "name": "knowledge_id",
+                "value": "={{ $('Create Chunks From Doc').item.json.knowledge_id }}"
+              }
+            ]
+          }
+        }
+      },
       "id": "b29ccf39-fc92-442c-823c-9e3f0058d896",
       "name": "Default Data Loader1",
       "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
@@ -307,7 +707,10 @@
       ]
     },
     {
-      "parameters": {},
+      "parameters": {
+        "operation": "xml",
+        "options": {}
+      },
       "id": "4a65ae0a-a56a-4e5b-a2b1-f5627f378e10",
       "name": "Extract Document Text1",
       "type": "n8n-nodes-base.extractFromFile",
@@ -319,7 +722,10 @@
       "alwaysOutputData": true
     },
     {
-      "parameters": {},
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
       "id": "650a2b01-6441-4214-9473-b93e878388e9",
       "name": "Extract PDF Text1",
       "type": "n8n-nodes-base.extractFromFile",
@@ -330,7 +736,10 @@
       ]
     },
     {
-      "parameters": {},
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
       "id": "dc35f0d6-172d-44e1-b000-df60da5114e2",
       "name": "Aggregate1",
       "type": "n8n-nodes-base.aggregate",
@@ -341,7 +750,17 @@
       ]
     },
     {
-      "parameters": {},
+      "parameters": {
+        "fieldsToSummarize": {
+          "values": [
+            {
+              "aggregation": "concatenate",
+              "field": "data"
+            }
+          ]
+        },
+        "options": {}
+      },
       "id": "fcc0a0dd-a2b8-4aa3-a725-e664595e9a71",
       "name": "Summarize1",
       "type": "n8n-nodes-base.summarize",
@@ -352,7 +771,18 @@
       ]
     },
     {
-      "parameters": {},
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "document_chunks",
+          "mode": "list",
+          "cachedResultName": "document_chunks"
+        },
+        "options": {
+          "queryName": "match_documents"
+        }
+      },
       "id": "5cca6ffd-8717-4885-91f1-80b6650d4c4e",
       "name": "Insert into Supabase Vectorstore1",
       "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
@@ -370,7 +800,10 @@
       "onError": "continueRegularOutput"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "operation": "xlsx",
+        "options": {}
+      },
       "id": "2f456f31-8ece-4e58-a032-6fcd51c150a4",
       "name": "Extract from Excel1",
       "type": "n8n-nodes-base.extractFromFile",
@@ -381,7 +814,25 @@
       ]
     },
     {
-      "parameters": {},
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f422e2e0-381c-46ea-8f38-3f58c501d8b9",
+              "name": "schema",
+              "value": "={{ $('Extract from Excel1').isExecuted ? $('Extract from Excel1').first().json.keys().toJsonString() : $('Extract from CSV1').first().json.keys().toJsonString() }}",
+              "type": "string"
+            },
+            {
+              "id": "bb07c71e-5b60-4795-864c-cc3845b6bc46",
+              "name": "data",
+              "value": "={{ $json.concatenated_data }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
@@ -392,7 +843,9 @@
       "name": "Set Schema1"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "options": {}
+      },
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1,
       "position": [
@@ -403,7 +856,62 @@
       "name": "Extract from CSV1"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "document_rows",
+          "mode": "list",
+          "cachedResultName": "document_rows"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "dataset_id": "={{ $('Insert Document Info').item.json.id }}",
+            "row_data": "={{ $json.toJsonString().replaceAll(/'/g, \"''\") }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "dataset_id",
+              "displayName": "dataset_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_data",
+              "displayName": "row_data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
@@ -420,7 +928,9 @@
       }
     },
     {
-      "parameters": {},
+      "parameters": {
+        "modelName": "models/embedding-001"
+      },
       "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
       "typeVersion": 1,
       "position": [
@@ -437,7 +947,10 @@
       }
     },
     {
-      "parameters": {},
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const chunks = [];\nconst chunkSize = 1000;\nconst chunkOverlap = 100;\nconst rawText = $json.data || $json.concatenated_data || $json.concatenated_content || $json.text || '';\nconst text = rawText.replace(/\\n/g, '');\n\nfor (let i = 0, j = Math.ceil(text.length / chunkSize); i < j; i++) {\n  chunks.push(\n    text.substr(\n      Math.max(0, (i * chunkSize) - chunkOverlap),\n      chunkSize\n    )\n  );\n}\n\n//  ————— Sanitization: strip U+FFFD and other control chars —————\nconst sanitizedChunks = chunks.map(chunk => {\n  return chunk\n    // Remove replacement characters\n    .replace(/[\\uFFFD\\uFFFC\\uFE0F]/g, '')\n    // Remove C0 control characters\n    .replace(/[\\x00-\\x1F]/g, '')\n    // Remove mathematical alphanumeric symbols (like 𝗖𝗢𝗠𝗕)\n    .replace(/[\\uD835][\\uDC00-\\uDFFF]/g, '')\n    // Remove any standalone surrogate pairs that might cause issues\n    .replace(/[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[\\uD800-\\uDFFF]/g, '')\n    // Replace any remaining non-standard characters with spaces\n    .replace(/[^\\x20-\\x7E\\u00A0-\\u00FF\\u0100-\\u017F\\u0180-\\u024F\\u0300-\\u036F\\u1E00-\\u1EFF]/g, ' ')\n    // Clean up by removing multiple spaces\n    .replace(/\\s+/g, ' ')\n    .trim();\n});\n\n// pick file_name from the node that actually ran\nconst fileName = $(\"Read webhook content\").isExecuted\n  ? $(\"Read webhook content\").first().json.file_name\n  : $(\"Read webhook content1\").first().json.file_name;\n\n// pick document id from the node that actually ran\nconst documentId = $(\"Insert Document Info\").isExecuted\n  ? $(\"Insert Document Info\").first().json.id\n  : $(\"Insert Document Info1\").first().json.id;\n\nconst knowledgeId = $(\"Read webhook content\").isExecuted\n  ? $(\"Read webhook content\").first().json.knowledge_base_id\n  : $(\"Read webhook content1\").first().json.knowledge_base_id;\n\n// return one item with sanitized chunks + the two extra fields\nreturn {\n  json: {\n    chunks: sanitizedChunks,\n    file_name: fileName,\n    document_id: documentId,\n    knowledge_id: knowledgeId\n  }\n};\n"
+      },
       "id": "337a3ae8-7ee9-40d6-bf53-942c83d12b6a",
       "name": "Create Chunks From Doc",
       "type": "n8n-nodes-base.code",
@@ -448,7 +961,12 @@
       ]
     },
     {
-      "parameters": {},
+      "parameters": {
+        "fieldToSplitOut": "chunks",
+        "options": {
+          "destinationFieldName": "chunk"
+        }
+      },
       "id": "b6b2c02a-bf3f-42a6-a79f-20ebe8bc8981",
       "name": "Chunks To List",
       "type": "n8n-nodes-base.splitOut",
@@ -459,7 +977,10 @@
       ]
     },
     {
-      "parameters": {},
+      "parameters": {
+        "promptType": "define",
+        "text": "=<document> \n{{ \n  $('Extract Document Text1').isExecuted ? $('Extract Document Text1').first().json.data :\n  $('Extract PDF Text1').isExecuted ? $('Extract PDF Text1').first().json.data :\n  $('Extract from Excel1').isExecuted ? $('Summarize1').item.json.concatenated_data :\n  $('Extract from CSV1').isExecuted ? $('Summarize1').item.json.concatenated_data :\n  ''\n}} \n</document>\nHere is the chunk we want to situate within the whole document \n<chunk> \n{{ $json.chunk }}\n</chunk> \nPlease give a short succinct context to situate this chunk within the overall document for the purposes of improving search retrieval of the chunk. Answer only with the succinct context and nothing else.\n"
+      },
       "id": "68218e61-692e-41a3-8762-d5ccac998023",
       "name": "Generate Contextual Text",
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
@@ -470,7 +991,10 @@
       ]
     },
     {
-      "parameters": {},
+      "parameters": {
+        "modelName": "models/gemini-1.5-flash",
+        "options": {}
+      },
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1,
       "position": [
@@ -487,7 +1011,25 @@
       }
     },
     {
-      "parameters": {},
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "069d067c-3534-4939-8ff4-34dee02a9436",
+              "name": "chunk",
+              "value": "={{ $('Chunks To List').item.json.chunk }}",
+              "type": "string"
+            },
+            {
+              "id": "24e01f4f-e156-47e9-a89e-9cbdccda6bd4",
+              "name": "text",
+              "value": "={{ $('Generate Contextual Text').item.json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
       "id": "f537743f-b3dd-4aab-b273-126d09dd12fc",
       "name": "Get Values",
       "type": "n8n-nodes-base.set",
@@ -498,7 +1040,10 @@
       ]
     },
     {
-      "parameters": {},
+      "parameters": {
+        "chunkSize": 2000,
+        "options": {}
+      },
       "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
       "typeVersion": 1,
       "position": [
@@ -509,7 +1054,12 @@
       "name": "Recursive Character Text Splitter"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "url": "=https://zvnqtphjgzfnikviyajj.supabase.co/storage/v1/object/chatbot-documents/{{ $('Read webhook content').item.json.path }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
@@ -517,10 +1067,30 @@
         800
       ],
       "id": "17f76b32-6804-4b6c-ae25-c0ce9daec6e9",
-      "name": "HTTP Request1"
+      "name": "HTTP Request1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "CAivPbO134UFXAZV",
+          "name": "Supabase account"
+        }
+      }
     },
     {
-      "parameters": {},
+      "parameters": {
+        "name": "data",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "root",
+          "cachedResultName": "/ (Root folder)"
+        },
+        "options": {}
+      },
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
       "position": [
@@ -528,10 +1098,22 @@
         1100
       ],
       "id": "e8a40a79-283a-4729-90ed-304dbdce8018",
-      "name": "Google Drive"
+      "name": "Google Drive",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "eRFCKQYvUa3SeYUg",
+          "name": "Google Drive account"
+        }
+      }
     },
     {
-      "parameters": {},
+      "parameters": {
+        "method": "POST",
+        "url": "=https://www.googleapis.com/drive/v2/files/{{ $json.id }}/copy?convert=true&supportsAllDrives=true",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "options": {}
+      },
       "id": "5b0447f3-3880-47e5-8daf-dbf9d3eb30b9",
       "name": "Convert MS files to Google Docs",
       "type": "n8n-nodes-base.httpRequest",
@@ -539,10 +1121,30 @@
       "position": [
         -360,
         1100
-      ]
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "eRFCKQYvUa3SeYUg",
+          "name": "Google Drive account"
+        }
+      }
     },
     {
-      "parameters": {},
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "text/plain"
+            }
+          }
+        }
+      },
       "id": "738be4b2-4c40-42a9-82b3-ebc124e44e72",
       "name": "Download File1",
       "type": "n8n-nodes-base.googleDrive",
@@ -551,10 +1153,26 @@
         -180,
         1100
       ],
-      "executeOnce": true
+      "executeOnce": true,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "eRFCKQYvUa3SeYUg",
+          "name": "Google Drive account"
+        }
+      }
     },
     {
-      "parameters": {},
+      "parameters": {
+        "operation": "deleteFile",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $('Google Drive').item.json.id }}",
+          "mode": "id"
+        },
+        "options": {
+          "deletePermanently": true
+        }
+      },
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
       "position": [
@@ -562,10 +1180,26 @@
         1260
       ],
       "id": "adf3b97d-1f73-49e0-ace5-a9c6cc598261",
-      "name": "Google Drive1"
+      "name": "Google Drive1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "eRFCKQYvUa3SeYUg",
+          "name": "Google Drive account"
+        }
+      }
     },
     {
-      "parameters": {},
+      "parameters": {
+        "operation": "deleteFile",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $('Convert MS files to Google Docs').item.json.id }}",
+          "mode": "id"
+        },
+        "options": {
+          "deletePermanently": true
+        }
+      },
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
       "position": [
@@ -573,10 +1207,29 @@
         1260
       ],
       "id": "7e20af29-435f-4926-ba09-567b372255c3",
-      "name": "Google Drive2"
+      "name": "Google Drive2",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "eRFCKQYvUa3SeYUg",
+          "name": "Google Drive account"
+        }
+      }
     },
     {
-      "parameters": {},
+      "parameters": {
+        "operation": "update",
+        "tableId": "document_chunks",
+        "filterType": "string",
+        "filterString": "=metadata->>file_title=like.*{{ $('Create Chunks From Doc').item.json.file_name }}*",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "document_id",
+              "fieldValue": "={{ $('Create Chunks From Doc').item.json.document_id }}"
+            }
+          ]
+        }
+      },
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
@@ -593,7 +1246,133 @@
       }
     },
     {
-      "parameters": {},
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('Insert Document Info').item.json.id }}",
+            "schema": "={{ $json.schema }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "knowledge_base_id",
+              "displayName": "knowledge_base_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "content",
+              "displayName": "content",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "file_path",
+              "displayName": "file_path",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "file_type",
+              "displayName": "file_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "metadata",
+              "displayName": "metadata",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "schema",
+              "displayName": "schema",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
@@ -610,7 +1389,134 @@
       }
     },
     {
-      "parameters": {},
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('Create Chunks From Doc').item.json.document_id }}",
+            "status": "completed"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "knowledge_base_id",
+              "displayName": "knowledge_base_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "content",
+              "displayName": "content",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "file_path",
+              "displayName": "file_path",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "file_type",
+              "displayName": "file_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "metadata",
+              "displayName": "metadata",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "schema",
+              "displayName": "schema",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
@@ -627,7 +1533,10 @@
       }
     },
     {
-      "parameters": {},
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
       "id": "a4b6eda4-9003-4f70-928e-9fcd8d34263b",
       "name": "Aggregate",
       "type": "n8n-nodes-base.aggregate",
@@ -638,7 +1547,21 @@
       ]
     },
     {
-      "parameters": {},
+      "parameters": {
+        "url": "={{ $('Read webhook content1').item.json.file_name }}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
       "id": "51f0de7c-201d-4363-9d90-fe26515018cb",
       "name": "Fetch Page",
       "type": "n8n-nodes-base.httpRequest",
@@ -649,7 +1572,10 @@
       ]
     },
     {
-      "parameters": {},
+      "parameters": {
+        "html": "={{ $json.data }}",
+        "options": {}
+      },
       "type": "n8n-nodes-base.markdown",
       "typeVersion": 1,
       "position": [
@@ -660,7 +1586,9 @@
       "name": "Markdown2"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "jsCode": "// Get all input items\nconst items = $input.all();\nconsole.log(items)\n\n// Function to convert markdown to plain text\nfunction convertMarkdownToPlainText(markdown) {\n  // Ensure we're working with a string\n  let plainText = String(markdown);\n  \n  // Remove links: [text](URL)\n  plainText = plainText.replace(/\\[([^\\]]+)\\]\\([^\\)]+\\)/g, '$1');\n  \n  // Remove images: ![alt text](URL)\n  plainText = plainText.replace(/!\\[([^\\]]*)\\]\\([^\\)]+\\)/g, '$1');\n  \n  // Remove headers: # Header\n  plainText = plainText.replace(/(#+)\\s*(.*)/g, '$2');\n  \n  // Remove bold and italic formatting\n  plainText = plainText.replace(/\\*\\*|\\*|__|_/g, '');\n  \n  // Remove HTML special characters\n  plainText = plainText.replace(/([<>])/g, '');\n  \n  // Remove extra line breaks\n  plainText = plainText.replace(/\\n\\s*\\n/g, '\\n');\n  \n  // Remove bullet points or numbered list formatting\n  plainText = plainText.replace(/^\\s*[-*+]\\s+/gm, '');\n  \n  return plainText.trim();\n}\n\n// Process all items and combine them with page numbers and clear formatting\nconst combinedContent = items.map((item, index) => {\n  let content;\n  if (typeof item === 'object' && item !== null) {\n    content = item.json.data || item.json.content || item.json.text || JSON.stringify(item);\n  } else {\n    content = String(item);\n  }\n  \n  const pageNumber = index + 1;\n  const processedContent = convertMarkdownToPlainText(content);\n  \n  return `Page ${pageNumber}\\n──────────────────\\n\\n${processedContent}\\n\\n\\n`;\n}).join('\\n\\n'); // Double line breaks between pages\n\n// Return with both raw content and formatted content\nreturn [{\n  json: {\n    data: combinedContent,\n    rawContent: items.map((item, index) => ({\n      pageNumber: index + 1,\n      content: convertMarkdownToPlainText(String(item.json.data || item.json.content || item.json.text || item))\n    }))\n  }\n}];"
+      },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -671,22 +1599,168 @@
       "name": "Strip2"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d467f19d-37e4-45fb-b570-ed760f3451e1",
+              "name": "path",
+              "value": "={{ ($json.body.path) }}",
+              "type": "string"
+            },
+            {
+              "id": "c5623507-9cc7-485f-bd28-378874c23d48",
+              "name": "knowledge_base_id",
+              "value": "={{ ($json.body.knowledge_base_id) }}",
+              "type": "string"
+            },
+            {
+              "id": "b8d4dc38-a994-438e-8fef-ae9eebb9913e",
+              "name": "file_name",
+              "value": "={{ ($json.body.file_name) }}",
+              "type": "string"
+            },
+            {
+              "id": "061ab9c8-750c-40b8-ba66-11c4289f3fe5",
+              "name": "sitemap-enabled",
+              "value": "={{ ($json.body.is_sitemap) }}",
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -1540,
+        -1580,
         1320
       ],
       "id": "a67a54e7-eb55-42e5-8f1d-3e396d5b15a3",
       "name": "Read webhook content1"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "title": "={{ $('Read webhook content1').item.json.file_name }}",
+            "knowledge_base_id": "={{ $('Read webhook content1').item.json.knowledge_base_id }}",
+            "file_path": "={{ $('Read webhook content1').item.json.path }}",
+            "file_type": "url"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "knowledge_base_id",
+              "displayName": "knowledge_base_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "content",
+              "displayName": "content",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "file_path",
+              "displayName": "file_path",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "file_type",
+              "displayName": "file_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "metadata",
+              "displayName": "metadata",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        -1320,
+        -1360,
         1320
       ],
       "id": "e132c7df-e72c-468e-9952-513918d53013",
@@ -700,7 +1774,11 @@
       }
     },
     {
-      "parameters": {},
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "upload-url",
+        "options": {}
+      },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
@@ -712,7 +1790,11 @@
       "webhookId": "13d1789b-2a28-43dd-938f-21b9cdff03f4"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "upload-doc",
+        "options": {}
+      },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
@@ -724,18 +1806,80 @@
       "webhookId": "13d1789b-2a28-43dd-938f-21b9cdff03f4"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Read webhook content1').item.json['sitemap-enabled'] }}",
+                    "rightValue": false,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "equals"
+                    },
+                    "id": "052f7576-b374-4474-b6f7-04fe5e99d9bb"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "b31aeffa-adfd-43a0-a251-917fa2f4abf8",
+                    "leftValue": "={{ $('Read webhook content1').item.json['sitemap-enabled'] }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
       "position": [
-        -1120,
+        -1160,
         1320
       ],
       "id": "81691459-d744-4f3e-90a2-d367b3a25d6e",
       "name": "Switch2"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "url": "={{ $('Read webhook content1').item.json.file_name }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
+            }
+          ]
+        },
+        "options": {}
+      },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
@@ -746,7 +1890,10 @@
       "name": "Fetch Sitemap Page"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// 1️⃣  Raw XML from the HTTP-Request node\nconst xmlString = $json.body ?? $json.data ?? $json.text ?? '';\n\n// 2️⃣  Collect every <loc> value\nconst locs = [];\nconst re = /<loc>\\s*([^<\\s]+)\\s*<\\/loc>/gi;\nlet m;\nwhile ((m = re.exec(xmlString)) !== null) locs.push(m[1].trim());\n\n// 3️⃣  Decide pathway type\nconst pathway = /\\.xml(\\.gz)?$/i.test(locs[0]) ? 'xml' : 'url';\n\n// 4️⃣  Build output object\nconst output = { pathway };\nlocs.forEach((u, i) => { output[`loc${i + 1}`] = u; });\n\n// 5️⃣  Return **one** item (default node mode)\nreturn { json: output };\n"
+      },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -757,7 +1904,9 @@
       "name": "Code1"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "jsCode": "const urls = Object.entries($input.first().json)\n  .filter(([key]) => key.startsWith('loc'))\n  .map(([_, url]) => ({ json: { url } }));\n\nreturn urls;\n"
+      },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -768,7 +1917,9 @@
       "name": "Code3"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "options": {}
+      },
       "type": "n8n-nodes-base.xml",
       "typeVersion": 1,
       "position": [
@@ -780,7 +1931,10 @@
       "onError": "continueRegularOutput"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "content": "## Xml check\n\nSome websites have 2x sitemap/ xml pages as they have categories.\nUrl-ex: https://bigpig.vn/sitemap_index.xml\nhttps://nhahanglangnuongnambo.com/sitemap.xml",
+        "height": 400
+      },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
@@ -791,7 +1945,31 @@
       "name": "Sticky Note3"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b9a4d5b0-2385-49cd-9228-df1c56284cf1",
+              "leftValue": "={{ $json.pathway }}",
+              "rightValue": "url",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
@@ -802,7 +1980,9 @@
       "name": "If1"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "jsCode": "const urls = Object.entries($input.first().json)\n  .filter(([key]) => key.startsWith('loc'))\n  .map(([_, url]) => ({ json: { url } }));\n\nreturn urls;\n"
+      },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -813,7 +1993,10 @@
       "name": "Code4"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "html": "={{ $json.data ? $json.data : '' }}",
+        "options": {}
+      },
       "type": "n8n-nodes-base.markdown",
       "typeVersion": 1,
       "position": [
@@ -824,7 +2007,10 @@
       "name": "Markdown3"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "html": "={{ $json.data }}",
+        "options": {}
+      },
       "type": "n8n-nodes-base.markdown",
       "typeVersion": 1,
       "position": [
@@ -836,7 +2022,9 @@
       "onError": "continueRegularOutput"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "jsCode": "// Get all input items\nconst items = $input.all();\nconsole.log(items)\n\n// Function to convert markdown to plain text\nfunction convertMarkdownToPlainText(markdown) {\n  // Ensure we're working with a string\n  let plainText = String(markdown);\n  \n  // Remove links: [text](URL)\n  plainText = plainText.replace(/\\[([^\\]]+)\\]\\([^\\)]+\\)/g, '$1');\n  \n  // Remove images: ![alt text](URL)\n  plainText = plainText.replace(/!\\[([^\\]]*)\\]\\([^\\)]+\\)/g, '$1');\n  \n  // Remove headers: # Header\n  plainText = plainText.replace(/(#+)\\s*(.*)/g, '$2');\n  \n  // Remove bold and italic formatting\n  plainText = plainText.replace(/\\*\\*|\\*|__|_/g, '');\n  \n  // Remove HTML special characters\n  plainText = plainText.replace(/([<>])/g, '');\n  \n  // Remove extra line breaks\n  plainText = plainText.replace(/\\n\\s*\\n/g, '\\n');\n  \n  // Remove bullet points or numbered list formatting\n  plainText = plainText.replace(/^\\s*[-*+]\\s+/gm, '');\n  \n  return plainText.trim();\n}\n\n// Process all items and combine them with page numbers and clear formatting\nconst combinedContent = items.map((item, index) => {\n  let content;\n  if (typeof item === 'object' && item !== null) {\n    content = item.json.data || item.json.content || item.json.text || JSON.stringify(item);\n  } else {\n    content = String(item);\n  }\n  \n  const pageNumber = index + 1;\n  const processedContent = convertMarkdownToPlainText(content);\n  \n  return `Page ${pageNumber}\\n──────────────────\\n\\n${processedContent}\\n\\n\\n`;\n}).join('\\n\\n'); // Double line breaks between pages\n\n// Return with both raw content and formatted content\nreturn [{\n  json: {\n    content: combinedContent,\n    // rawContent: items.map((item, index) => ({\n    //   pageNumber: index + 1,\n    //   content: convertMarkdownToPlainText(String(item.json.data || item.json.content || item.json.text || item))\n    // }))\n  }\n}];"
+      },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -847,7 +2035,9 @@
       "name": "Strip3"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "jsCode": "function extractAllLocs(data) {\n    const locs = [];\n\n    function findLocs(obj) {\n        if (!obj) return;\n\n        if (Array.isArray(obj)) {\n            obj.forEach(findLocs);\n        } else if (typeof obj === 'object') {\n            for (const key in obj) {\n                if (key === 'loc' && typeof obj[key] === 'string') {\n                    locs.push(obj[key]);\n                } else {\n                    findLocs(obj[key]);\n                }\n            }\n        }\n    }\n\n    findLocs(data);\n    return locs.map(url => ({ url }));\n}\n\n// 1️⃣ Grab every incoming item\nconst allItems = $input.all();\n\n// 2️⃣ Collect locs from each item's urlset\nconst aggregated = [];\nfor (const item of allItems) {\n  const data = item.json.urlset;\n  if (data) {\n    const urls = extractAllLocs(data);\n    aggregated.push(...urls);\n  }\n}\n\n// 3️⃣ Return one n8n item per URL\nreturn aggregated.map(u => ({ json: u }));\n"
+      },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -858,7 +2048,32 @@
       "name": "find URLs1"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
+            }
+          ]
+        },
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 10,
+              "batchInterval": 2000
+            }
+          },
+          "allowUnauthorizedCerts": false,
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
@@ -871,7 +2086,9 @@
       "waitBetweenTries": 2000
     },
     {
-      "parameters": {},
+      "parameters": {
+        "jsCode": "// Get all input items\nconst items = $input.all();\nconsole.log(items)\n\n// Function to convert markdown to plain text\nfunction convertMarkdownToPlainText(markdown) {\n  // Ensure we're working with a string\n  let plainText = String(markdown);\n  \n  // Remove links: [text](URL)\n  plainText = plainText.replace(/\\[([^\\]]+)\\]\\([^\\)]+\\)/g, '$1');\n  \n  // Remove images: ![alt text](URL)\n  plainText = plainText.replace(/!\\[([^\\]]*)\\]\\([^\\)]+\\)/g, '$1');\n  \n  // Remove headers: # Header\n  plainText = plainText.replace(/(#+)\\s*(.*)/g, '$2');\n  \n  // Remove bold and italic formatting\n  plainText = plainText.replace(/\\*\\*|\\*|__|_/g, '');\n  \n  // Remove HTML special characters\n  plainText = plainText.replace(/([<>])/g, '');\n  \n  // Remove extra line breaks\n  plainText = plainText.replace(/\\n\\s*\\n/g, '\\n');\n  \n  // Remove bullet points or numbered list formatting\n  plainText = plainText.replace(/^\\s*[-*+]\\s+/gm, '');\n  \n  return plainText.trim();\n}\n\n// Process all items and combine them with page numbers and clear formatting\nconst combinedContent = items.map((item, index) => {\n  let content;\n  if (typeof item === 'object' && item !== null) {\n    content = item.json.data || item.json.content || item.json.text || JSON.stringify(item);\n  } else {\n    content = String(item);\n  }\n  \n  const pageNumber = index + 1;\n  const processedContent = convertMarkdownToPlainText(content);\n  \n  return `Page ${pageNumber}\\n──────────────────\\n\\n${processedContent}\\n\\n\\n`;\n}).join('\\n\\n'); // Double line breaks between pages\n\n// Return with both raw content and formatted content\nreturn [{\n  json: {\n    content: combinedContent,\n    // rawContent: items.map((item, index) => ({\n    //   pageNumber: index + 1,\n    //   content: convertMarkdownToPlainText(String(item.json.data || item.json.content || item.json.text || item))\n    // }))\n  }\n}];"
+      },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -882,7 +2099,19 @@
       "name": "Strip4"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
+            }
+          ]
+        },
+        "options": {}
+      },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
@@ -894,7 +2123,32 @@
       "onError": "continueRegularOutput"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
+            }
+          ]
+        },
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 10,
+              "batchInterval": 2000
+            }
+          },
+          "allowUnauthorizedCerts": false,
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
@@ -906,7 +2160,10 @@
       "onError": "continueRegularOutput"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "batchSize": 50,
+        "options": {}
+      },
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
@@ -917,7 +2174,9 @@
       "name": "Loop Over Items"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "amount": 2
+      },
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
@@ -929,7 +2188,17 @@
       "webhookId": "ecc2a64f-0bc4-4cb3-9457-7a8c96e1fad0"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "fieldsToSummarize": {
+          "values": [
+            {
+              "aggregation": "concatenate",
+              "field": "content"
+            }
+          ]
+        },
+        "options": {}
+      },
       "type": "n8n-nodes-base.summarize",
       "typeVersion": 1.1,
       "position": [
@@ -940,7 +2209,10 @@
       "name": "Summarize"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "batchSize": 50,
+        "options": {}
+      },
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
@@ -951,7 +2223,9 @@
       "name": "Loop Over Items1"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "amount": 2
+      },
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
@@ -963,7 +2237,16 @@
       "webhookId": "ecc2a64f-0bc4-4cb3-9457-7a8c96e1fad0"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "content"
+            }
+          ]
+        },
+        "options": {}
+      },
       "type": "n8n-nodes-base.aggregate",
       "typeVersion": 1,
       "position": [
@@ -974,7 +2257,16 @@
       "name": "Aggregate2"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "content"
+            }
+          ]
+        },
+        "options": {}
+      },
       "type": "n8n-nodes-base.aggregate",
       "typeVersion": 1,
       "position": [
@@ -985,7 +2277,17 @@
       "name": "Aggregate3"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "fieldsToSummarize": {
+          "values": [
+            {
+              "aggregation": "concatenate",
+              "field": "content"
+            }
+          ]
+        },
+        "options": {}
+      },
       "type": "n8n-nodes-base.summarize",
       "typeVersion": 1.1,
       "position": [
@@ -994,152 +2296,102 @@
       ],
       "id": "ffae6284-4356-4833-8f05-6ccffd2c5f5e",
       "name": "Summarize2"
-    }
-  ],
-  "pinData": {
-    "Generate Contextual Text": [
-      {
-        "json": {
-          "text": "Big Pig restaurant website menu and live music event announcement."
+    },
+    {
+      "parameters": {
+        "tableId": "chat_messages",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "session_id",
+              "fieldValue": "={{ $('Edit Fields').item.json.sessionId }}"
+            },
+            {
+              "fieldId": "role",
+              "fieldValue": "assistant"
+            },
+            {
+              "fieldId": "content",
+              "fieldValue": "={{ $('RAG AI Agent').item.json.output }}"
+            }
+          ]
         }
       },
-      {
-        "json": {
-          "text": "Big Pig restaurant locations, contact information, and menu information.  Footer with website links."
-        }
-      },
-      {
-        "json": {
-          "text": "Restaurant menu description for Big Pig, highlighting fusion cuisine (American grill & Vietnamese) and beverage options."
-        }
-      },
-      {
-        "json": {
-          "text": "Restaurant advertisement featuring promotions, live music events, and catering services."
-        }
-      },
-      {
-        "json": {
-          "text": "Restaurant advertisement/menu with contact information and locations."
-        }
-      },
-      {
-        "json": {
-          "text": "Restaurant advertisement or menu featuring burger descriptions, customer testimonials, and possibly pricing."
-        }
-      },
-      {
-        "json": {
-          "text": "Footer and menu section of a Big Pig restaurant website, including contact information, copyright, and navigation links."
-        }
-      },
-      {
-        "json": {
-          "text": "Footer and navigation elements of a Big Pig restaurant website, including contact information, copyright notice, and menu links."
-        }
-      },
-      {
-        "json": {
-          "text": "Restaurant contact information, locations, and website links; page 6 of a larger document, likely a brochure or website printout."
-        }
-      },
-      {
-        "json": {
-          "text": "BIG PIG restaurant website footer and careers section."
-        }
-      },
-      {
-        "json": {
-          "text": "Big Pig restaurant menu and contact information."
-        }
-      },
-      {
-        "json": {
-          "text": "Footer and menu navigation from a Big Pig restaurant menu/website."
-        }
-      },
-      {
-        "json": {
-          "text": "Big Pig restaurant menu and contact information, including locations and website links.  Page 9 of a brochure or website."
-        }
-      },
-      {
-        "json": {
-          "text": "Restaurant Big Pig menu, locations, and contact information; page from website."
-        }
-      },
-      {
-        "json": {
-          "text": "Restaurant menu, contact information, and website links; likely the last page of a brochure or similar marketing material."
-        }
-      },
-      {
-        "json": {
-          "text": "Big Pig Professional Catering advertisement highlighting services and cuisine."
-        }
-      },
-      {
-        "json": {
-          "text": "Big Pig Professional Catering services menu and event planning information."
-        }
-      },
-      {
-        "json": {
-          "text": "Restaurant menu and contact information for Big Pig restaurants in Ho Chi Minh City, including location details, phone numbers, and website links.  Footer with navigation links also included."
-        }
-      },
-      {
-        "json": {
-          "text": "Big Pig restaurant website footer and menu information."
-        }
-      },
-      {
-        "json": {
-          "text": "Big Pig restaurant website footer and menu navigation."
-        }
-      },
-      {
-        "json": {
-          "text": "Website footer and menu, including location details and contact information for Big Pig restaurants."
-        }
-      },
-      {
-        "json": {
-          "text": "Big Pig restaurant website footer and navigation menu, including location details and contact information."
-        }
-      },
-      {
-        "json": {
-          "text": "Big Pig restaurant website homepage; menu and welcome message."
-        }
-      },
-      {
-        "json": {
-          "text": "Footer and menu section of Big Pig Truong Son restaurant website, including contact information, promotions, and copyright details."
-        }
-      },
-      {
-        "json": {
-          "text": "Big Pig restaurant menu and description."
-        }
-      },
-      {
-        "json": {
-          "text": "Big Pig restaurant advertisement and menu/location information."
-        }
-      },
-      {
-        "json": {
-          "text": "This chunk is from a Big Pig restaurant website, containing navigation menus, location information, event details (live music), and copyright information."
-        }
-      },
-      {
-        "json": {
-          "text": "Big Pig restaurant website content, including menu, locations, contact information, and a blog post about live music."
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        -140
+      ],
+      "id": "b01bdc17-e625-45b0-af53-ee8efc7891a7",
+      "name": "Supabase",
+      "credentials": {
+        "supabaseApi": {
+          "id": "CAivPbO134UFXAZV",
+          "name": "Supabase account"
         }
       }
-    ]
-  },
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Send a message in Gmail. Use the information extracted from user chat input",
+        "sendTo": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('To', `Will be listed in the chat input`, 'string') }}",
+        "subject": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Subject', `Listed in the chat input or you can summarize the message`, 'string') }}",
+        "message": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Message', `Will be listed in chat input`, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        -240,
+        320
+      ],
+      "id": "004c7355-33e6-49c9-992c-f113a2c05849",
+      "name": "Send Mail",
+      "webhookId": "c4c573b5-6e28-4f68-8639-52a915f6c279",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "k0QxRJzpZeCkcVIL",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "0f630b54-0534-471e-b08a-4d87a816d6a8",
+              "leftValue": "={{ $('Edit Fields').item.json.platform }}",
+              "rightValue": "web",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -320,
+        -40
+      ],
+      "id": "ffc293dc-2566-4ecf-9889-47be2e59aef8",
+      "name": "If"
+    }
+  ],
   "connections": {
     "Postgres Chat Memory": {
       "ai_memory": [
@@ -1150,6 +2402,11 @@
             "index": 0
           }
         ]
+      ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        []
       ]
     },
     "Edit Fields": {
@@ -1190,6 +2447,11 @@
         [
           {
             "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "If",
             "type": "main",
             "index": 0
           }
@@ -1322,6 +2584,38 @@
         ]
       ]
     },
+    "Switch1": {
+      "main": [
+        [
+          {
+            "node": "Extract PDF Text1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract from Excel1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract from CSV1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Default Data Loader1": {
       "ai_document": [
         [
@@ -1381,6 +2675,17 @@
           },
           {
             "node": "Create Chunks From Doc",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert into Supabase Vectorstore1": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
             "type": "main",
             "index": 0
           }
@@ -1507,38 +2812,6 @@
         ]
       ]
     },
-    "Switch1": {
-      "main": [
-        [
-          {
-            "node": "Extract PDF Text1",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Extract from Excel1",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Extract from CSV1",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Google Drive",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "HTTP Request1": {
       "main": [
         [
@@ -1594,17 +2867,6 @@
         ]
       ]
     },
-    "Insert into Supabase Vectorstore1": {
-      "main": [
-        [
-          {
-            "node": "Aggregate",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Update chunk document id": {
       "main": [
         []
@@ -1648,22 +2910,22 @@
         ]
       ]
     },
-    "Read webhook content1": {
+    "Strip2": {
       "main": [
         [
           {
-            "node": "Insert Document Info1",
+            "node": "Create Chunks From Doc",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Strip2": {
+    "Read webhook content1": {
       "main": [
         [
           {
-            "node": "Create Chunks From Doc",
+            "node": "Insert Document Info1",
             "type": "main",
             "index": 0
           }
@@ -1911,6 +3173,17 @@
         ]
       ]
     },
+    "Summarize": {
+      "main": [
+        [
+          {
+            "node": "Create Chunks From Doc",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Loop Over Items1": {
       "main": [
         [
@@ -1962,17 +3235,6 @@
         ]
       ]
     },
-    "Summarize": {
-      "main": [
-        [
-          {
-            "node": "Create Chunks From Doc",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Summarize2": {
       "main": [
         [
@@ -1983,17 +3245,33 @@
           }
         ]
       ]
+    },
+    "Send Mail": {
+      "ai_tool": [
+        [
+          {
+            "node": "RAG AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
-  "active": true,
-  "settings": {
-    "executionOrder": "v1"
-  },
-  "versionId": "4829d09a-a483-452a-b086-81f33e625676",
+  "pinData": {},
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "2f9a676940fcfba0fc018f4ccba4b9b9a7ad04946c86aa72d40912f4039eb118"
-  },
-  "id": "C4OTfT5IHwzap2Tc",
-  "tags": []
+  }
 }

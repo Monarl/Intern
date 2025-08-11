@@ -4,3 +4,4 @@ n8n/
 .github/
 /node_modules
 replacements.txt
+.mcp.json

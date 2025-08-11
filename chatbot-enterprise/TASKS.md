@@ -1,4 +1,95 @@
-# Enterprise Chatbot System - Initial Tasks
+# En### Enhancement: Chat Search Functionality
+- [x] Implementing text search for chat sessions and messages in dashboard (August 3, 2025)
+- [x] **Feature**: Allow users to search for specific text within chat sessions and messages
+- [x] **Implementation**: Search input field that filters chat sessions by content
+- [x] **Scope**: Search both chat session metadata and message content
+- [x] **UI**: Search bar in the chat sessions tab with real-time filtering
+- [x] **Navigation**: Preserve search and tab state when navigating to session details and back
+- [x] **Search Bar**: Made search bar longer (w-96) for better usability
+- [x] **Features Implemented**:
+  - Real-time search with 300ms debounce
+  - Search in user identifiers, chatbot names, platforms, and message content
+  - Results sorted by relevance (exact matches first)
+  - Clear search functionality with X button
+  - Loading indicator during search
+  - Search result count display
+  - URL parameter persistence for navigation state
+  - Back button preserves previous tab and search statese Chatbot System - Initial Tasks
+
+## Bug Fixes and Improvements (Current)
+
+### Bug Fix: Bulk Delete Documents API Field Mismatch
+- [x] Fixed bulk delete documents functionality that was failing with "Invalid document IDs" error (August 3, 2025)
+- [x] **Root Cause**: Frontend sending `document_ids` field but API expecting `documentIds` field
+- [x] **Issue**: Field name mismatch between frontend request body and API parameter destructuring
+- [x] **Solution**: Updated API to accept `document_ids` field name to match frontend implementation
+- [x] **Enhancement**: Added validation to ensure documents belong to specified knowledge base
+- [x] **File Modified**: `admin-dashboard/app/api/knowledge-base/documents/bulk-delete/route.ts`
+- [x] **Result**: Users can now successfully delete multiple documents at once
+
+### Enhancement: Processing Status Validation for Bulk Delete Operations
+- [x] Added processing status validation to bulk delete operations (August 3, 2025)
+- [x] **Feature**: Prevent deletion of documents with "processing" status in bulk operations
+- [x] **Implementation**: Added status checks similar to single delete operations
+- [x] **Scope**: Both bulk delete documents and bulk delete knowledge bases
+- [x] **Behavior**: Returns 409 Conflict with detailed error messages listing processing documents
+- [x] **Files Modified**: 
+  - `admin-dashboard/app/api/knowledge-base/documents/bulk-delete/route.ts`
+  - `admin-dashboard/app/api/knowledge-base/bulk-delete/route.ts`
+- [x] **Consistency**: Maintains same validation logic as single delete operations
+- [x] **Error Handling**: Provides detailed feedback about which documents are still processing
+
+### Enhancement: Chat Search Functionality
+- [x] Implementing text search for chat sessions and messages in dashboard (August 3, 2025)
+- [x] **Feature**: Allow users to search for specific text within chat sessions and messages
+- [x] **Implementation**: Search input field that filters chat sessions by content
+- [x] **Scope**: Search both chat session metadata and message content
+- [x] **UI**: Search bar in the chat sessions tab with real-time filtering
+
+### Bug Fix: Support Queue Not Showing Repeat Handoff Requests
+- [x] Fixed support queue not displaying pending requests when user requests human support again (August 1, 2025)
+- [x] **Root Cause**: Support queue query filtered out sessions with `last_agent_id` set from previous handoffs
+- [x] **Issue**: Once an agent handled a request and handed back to bot, `last_agent_id` was permanently set
+- [x] **Problem**: Query `.is('metadata->>last_agent_id', null)` prevented sessions from appearing in queue again
+- [x] **Solution**: Removed `last_agent_id` filter from support queue query in `/dashboard/chats/page.tsx`
+- [x] **Result**: Support queue now shows all active handoff requests regardless of previous agent interventions
+- [x] **File Modified**: `admin-dashboard/app/dashboard/chats/page.tsx` (line 152)
+
+### Bug Fix: Chatbot Deletion Not Working
+- [x] Fixed chatbot deletion functionality that was silently failing (July 28, 2025)
+- [x] **Root Cause**: Missing DELETE RLS policy for chatbots table
+- [x] **Root Cause**: Foreign key constraint with NO ACTION preventing deletion when chat sessions exist
+- [x] **Solution**: Added DELETE RLS policy for Super Admin and Chatbot Manager roles
+- [x] **Solution**: Updated foreign key constraint to CASCADE delete related chat sessions and messages
+- [x] **Database Changes**:
+  - Added policy: "Chatbot managers can delete chatbots" 
+  - Updated constraint: `chat_sessions_optimized_chatbot_id_fkey` with CASCADE delete
+- [x] **Result**: Chatbot deletion now works properly and cleans up related data
+
+### Enhancement: Chatbot Inactive Status Handling
+- [x] Added chatbot active/inactive status checking functionality (July 28, 2025)
+- [x] Implemented chatbot status validation before opening chat widget
+- [x] Added inactive notification display when user tries to interact with inactive chatbot
+- [x] Prevented session creation for inactive chatbots
+- [x] Added visual feedback (disabled button state) for inactive chatbots
+- [x] Implemented message sending prevention for inactive chatbots
+- [x] Added proper error handling and user notification for inactive status
+
+### Enhancement: Chatbot Embed Code Integration
+- [x] Added embed code generation and copy functionality to chatbot edit page (July 28, 2025)
+- [x] Created HTML iframe embed method with proper positioning and styling
+- [x] Created JavaScript embed method for advanced integration
+- [x] Added integration instructions and preview page link
+- [x] Created dedicated preview page at `/dashboard/chatbots/[id]/preview`
+- [x] Implemented responsive device preview (desktop, tablet, mobile)
+- [x] Added realistic webpage simulation for testing embed integration
+- [x] Updated create chatbot flow to redirect to edit page for immediate access to embed codes
+
+### Bug Fix: ChatbotEdit - primaryColor undefined error
+- [x] Fixed "Cannot read properties of undefined (reading 'primaryColor')" error in edit chatbot page (July 25, 2025)
+- [x] Added null/undefined checks for config.appearance properties
+- [x] Updated updateAppearance function to handle undefined appearance object
+- [x] Fixed TypeScript errors related to duplicate property warnings
 
 ## Prerequisites Setup (Week 1)
 
@@ -467,12 +558,38 @@ chatbot-enterprise/
   5. **Status Management**: Track handoff status
 
 ### Task 4.2: Customer Support (Support Agent) Interface
-**Priority: High | Estimated Time: 5 hours**
+**Priority: High | Estimated Time: 5 hours** ✅ **COMPLETED** (July 29, 2025)
 
-- [ ] Create CS agent dashboard
-- [ ] Implement agent availability management
-- [ ] Add live chat interface for agents
-- [ ] Create handoff request queue
+- [x] **Chat Widget Enhancement**: Added manual handoff request button with optional reason dialog
+- [x] **Support Agent Dashboard**: Created specialized "Support Queue" tab for pending handoff requests  
+- [x] **Agent Interface**: Enhanced chat detail page with agent intervention and handback capabilities
+- [x] **Role-Based Access**: Implemented RBAC for Support Agent and Super Admin roles only
+- [x] **Real-time Updates**: Integrated with existing Supabase real-time subscriptions
+- [x] **Visual Indicators**: Added status badges, notifications, and handoff context display
+- [x] **Database Integration**: Uses existing session metadata without new tables/columns
+- [x] **Documentation**: Created comprehensive README with n8n webhook specifications
+- [x] **User Flow**: Complete handoff cycle - request → agent takeover → handback to bot
+- [x] ✨ **Hand Back to Bot Enhancement**: Implemented automatic restoration of handoff button (July 29, 2025)
+  - [x] Real-time detection of handback messages from agents
+  - [x] Automatic restoration of handoff button when agent hands back to bot
+  - [x] Session metadata monitoring for handoff state changes
+  - [x] Enhanced chat history loading with handoff state determination
+  - [x] Multiple handoff request capability in single conversation
+  - [x] Comprehensive documentation and implementation guide
+- [x] 🐛 **Bug Fixes**: Resolved dashboard and chat widget issues (January 2, 2025)
+  - [x] Fixed dashboard "Hand back to bot" button not disappearing immediately ✅ **RESOLVED**
+  - [x] Enhanced dashboard real-time subscription to listen for session metadata updates
+  - [x] Improved chat widget error handling for session metadata loading ✅ **RESOLVED**
+  - [x] Resolved 406 error when loading session metadata for new chat sessions
+  - [x] Added graceful error handling for non-existent sessions
+  - [x] Documented CORS issue with n8n webhook calls and provided workaround options
+  - [x] Added comprehensive bug fix documentation in `docs/handback-bug-fixes.md`
+  - [x] 🔧 **CORS Error Fix**: Created missing n8n workflow for handoff requests (January 2, 2025)
+    - [x] **Root Cause**: `/webhook/handoff-request` endpoint didn't exist in n8n (only `/rag-chat` existed)
+    - [x] **Solution**: Created `Handoff_Request_Simple.json` workflow to handle handoff webhook calls
+    - [x] **Workflow Features**: Processes handoff data, updates session metadata, returns success response
+    - [x] **Documentation**: Created `docs/cors-error-fix-handoff-workflow.md` with setup instructions
+    - [x] **Result**: Eliminated CORS errors when users click "Request Human Support" button ✅ **RESOLVED**
 
 ### Task 4.3: Integration Testing
 **Priority: High | Estimated Time: 3 hours**
@@ -482,7 +599,61 @@ chatbot-enterprise/
 - [ ] Test human handoff scenarios
 - [ ] Performance testing and optimization
 
-## Daily Development Tasks
+## Chatbot Management System
+**Priority: High | Estimated Time: 6 hours** ✅ **COMPLETED** (July 25, 2025)
+
+### Task A – Update dashboard navigation
+- [x] In layout.tsx, replace "Documents" nav item with "Chatbots"
+- [x] Link points to `/dashboard/chatbots`
+- [x] Added Bot icon from lucide-react
+- [x] No TypeScript errors in layout file
+
+### Task B – Chatbot management pages (CRUD)
+- [x] Location: `admin-dashboard/app/dashboard/chatbots`
+- [x] Created chatbot role guard component identical to chats RBAC
+- [x] Only roles `super_admin` and `chatbot_manager` can access
+- [x] **List page**: Shows all chatbots with stats (chat count, last activity)
+- [x] **Create page**: Full form with knowledge base selection and widget configuration
+- [x] **Edit page**: Update existing chatbot with all configuration options
+- [x] **Delete functionality**: Confirmation dialog with cascade deletion warning
+
+### Task C – Chatbot creation form
+- [x] Form parameters based on chat-widget README.md configuration:
+  - Basic info: name, description, n8n webhook URL
+  - Knowledge base selection with multi-select checkboxes
+  - Widget configuration: position, welcome message, appearance settings
+  - Color picker for primary color, font family selection
+  - Border radius customization
+- [x] Form validation with required fields and character limits
+- [x] Data stored in Supabase `chatbots` table with proper structure
+- [x] Error handling and success notifications
+
+### Task D – Integrate preview widget
+- [x] Dynamic import of ChatWidget component from `chat-widget` project
+- [x] Live preview on right side of form with real-time updates
+- [x] Preview shows actual widget behavior matching localhost:3001
+- [x] Configuration changes reflected immediately in preview
+- [x] Mockup website background with widget overlay
+- [x] Preview toggle functionality (show/hide)
+- [x] Preview uses actual Supabase credentials for realistic testing
+
+**Implementation Notes:**
+- All TypeScript files are error-free
+- RBAC properly implemented using existing pattern from chats module
+- Supabase integration uses existing chatbots table with proper UUID structure
+- ChatWidget preview integrates seamlessly with real component
+- Form data includes all parameters from chat-widget README specification
+- Preview behavior matches actual widget running on localhost:3001
+- Dynamic imports prevent build issues while maintaining functionality
+- Complete CRUD operations with proper error handling and user feedback
+
+**Files Created/Modified:**
+- `admin-dashboard/app/dashboard/layout.tsx` - Updated navigation
+- `admin-dashboard/components/chatbots/chatbot-role-guard.tsx` - RBAC component
+- `admin-dashboard/app/dashboard/chatbots/page.tsx` - Chatbot listing
+- `admin-dashboard/app/dashboard/chatbots/create/page.tsx` - Creation form with preview
+- `admin-dashboard/app/dashboard/chatbots/[id]/edit/page.tsx` - Edit form with preview
+- Added shadcn/ui components: alert-dialog, select, switch
 
 ### Week 1 Daily Breakdown:
 **Monday**: Development environment setup, Node.js and npm n8n installation

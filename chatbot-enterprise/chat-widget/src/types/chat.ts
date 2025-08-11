@@ -29,6 +29,7 @@ export interface ChatWidgetConfig {
   supabaseAnonKey: string
   n8nWebhookUrl: string
   platform: string
+  knowledgeBaseIds?: string[]
   appearance?: {
     primaryColor?: string
     fontFamily?: string
@@ -43,12 +44,14 @@ export interface N8nChatRequest {
   sessionId: string
   chatbotId: string
   userIdentifier?: string
+  knowledgeBaseIds?: string[]
   metadata?: any
 }
 
 export interface N8nChatResponse {
   response: string
   sessionId: string
+  messageId?: string  // Optional ID of the message in database
   metadata?: {
     sources?: string[]
     confidence?: number

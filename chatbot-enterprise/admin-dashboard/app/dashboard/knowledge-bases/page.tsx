@@ -2,15 +2,17 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { PlusCircle, Trash2, FileUp, Globe, AlertCircle } from 'lucide-react'
+import { PlusCircle, Trash2, FileUp, Globe, AlertCircle, X } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
+import { Checkbox } from '@/components/ui/checkbox'
 import NewKnowledgeBaseDialog from '@/components/knowledge-base/new-knowledge-base-dialog'
 import UploadFileDialog from '@/components/knowledge-base/upload-file-dialog'
 import UploadUrlDialog from '@/components/knowledge-base/upload-url-dialog'
 import DeleteConfirmDialog from '@/components/knowledge-base/delete-confirm-dialog'
+import BulkDeleteKnowledgeBasesDialog from '@/components/knowledge-base/bulk-delete-kbs-dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useSupabase } from '@/lib/supabase/context'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -30,16 +32,21 @@ export default function KnowledgeBasesPage() {
   const [loading, setLoading] = useState(true)
   const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([])
   
+  // Selection state
+  const [selectedKbIds, setSelectedKbIds] = useState<Set<string>>(new Set())
+  const [isSelectionMode, setIsSelectionMode] = useState(false)
+  
   // Dialog state
   const [newKbDialogOpen, setNewKbDialogOpen] = useState(false)
   const [uploadFileDialogOpen, setUploadFileDialogOpen] = useState(false)
   const [uploadUrlDialogOpen, setUploadUrlDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false)
   const [selectedKb, setSelectedKb] = useState<KnowledgeBase | null>(null)
 
   const fetchKnowledgeBases = useCallback(async () => {
-    // Double check permissions before making API call
-    if (userRole !== 'Super Admin' && userRole !== 'Knowledge Manager') {
+    // Check if user has view permission before making API call
+    if (!userRole) {
       return
     }
     
@@ -86,8 +93,8 @@ export default function KnowledgeBasesPage() {
   }, [userRole])
 
   useEffect(() => {
-    // Only fetch data if user has the right permissions
-    if (!userLoading && (userRole === 'Super Admin' || userRole === 'Knowledge Manager')) {
+    // Only fetch data if user has view permissions
+    if (!userLoading && userRole) {
       fetchKnowledgeBases()
     }
   }, [userLoading, userRole, fetchKnowledgeBases])
@@ -112,6 +119,66 @@ export default function KnowledgeBasesPage() {
     }
   }
 
+  async function handleBulkDeleteKnowledgeBases() {
+    try {
+      const selectedIds = Array.from(selectedKbIds)
+      const response = await fetch('/api/knowledge-base/bulk-delete', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ knowledgeBaseIds: selectedIds }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to delete knowledge bases')
+      }
+
+      const result = await response.json()
+      toast.success(result.message)
+      
+      // Clear selection and exit selection mode
+      setSelectedKbIds(new Set())
+      setIsSelectionMode(false)
+      setBulkDeleteDialogOpen(false)
+      
+      fetchKnowledgeBases() // Refresh the list
+    } catch (error) {
+      console.error('Error bulk deleting knowledge bases:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to delete knowledge bases')
+    }
+  }
+
+  // Selection handlers
+  function toggleKbSelection(kbId: string) {
+    const newSelected = new Set(selectedKbIds)
+    if (newSelected.has(kbId)) {
+      newSelected.delete(kbId)
+    } else {
+      newSelected.add(kbId)
+    }
+    setSelectedKbIds(newSelected)
+  }
+
+  function selectAllKbs() {
+    setSelectedKbIds(new Set(knowledgeBases.map(kb => kb.id)))
+  }
+
+  function clearSelection() {
+    setSelectedKbIds(new Set())
+  }
+
+  function enterSelectionMode() {
+    setIsSelectionMode(true)
+    setSelectedKbIds(new Set())
+  }
+
+  function exitSelectionMode() {
+    setIsSelectionMode(false)
+    setSelectedKbIds(new Set())
+  }
+
   function openDeleteDialog(kb: KnowledgeBase) {
     setSelectedKb(kb)
     setDeleteDialogOpen(true)
@@ -130,12 +197,17 @@ export default function KnowledgeBasesPage() {
   function viewDocuments(kb: KnowledgeBase) {
     router.push(`/dashboard/knowledge-bases/${kb.id}`)
   }
+
+  // Computed properties
+  const selectedKnowledgeBasesData = knowledgeBases.filter(kb => selectedKbIds.has(kb.id))
   
-  // Only Super Admin and Knowledge Manager should be able to access this page
-  const hasPermission = userRole === 'Super Admin' || userRole === 'Knowledge Manager'
+  // All authenticated users can view knowledge bases
+  const hasViewPermission = userRole !== null
+  // Only Super Admin and Knowledge Manager can edit/delete
+  const hasEditPermission = userRole === 'Super Admin' || userRole === 'Knowledge Manager'
 
   // Show unauthorized access message if user doesn't have correct role
-  if (!userLoading && !hasPermission) {
+  if (!userLoading && !hasViewPermission) {
     return (
       <div className="space-y-6">
         <h1 className="text-3xl font-bold tracking-tight">Knowledge Bases</h1>
@@ -144,7 +216,7 @@ export default function KnowledgeBasesPage() {
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Unauthorized Access</AlertTitle>
           <AlertDescription>
-            You do not have permission to view this page. Only Super Admins and Knowledge Managers can access Knowledge Bases.
+            You do not have permission to view this page. Please contact your administrator.
           </AlertDescription>
         </Alert>
       </div>
@@ -155,10 +227,42 @@ export default function KnowledgeBasesPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold tracking-tight">Knowledge Bases</h1>
-        <Button onClick={() => setNewKbDialogOpen(true)}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          New Knowledge Base
-        </Button>
+        <div className="flex gap-2">
+          {hasEditPermission && !isSelectionMode && (
+            <>
+              <Button variant="outline" onClick={enterSelectionMode}>
+                Select Multiple
+              </Button>
+              <Button onClick={() => setNewKbDialogOpen(true)}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                New Knowledge Base
+              </Button>
+            </>
+          )}
+          
+          {isSelectionMode && (
+            <>
+              <Button variant="outline" onClick={selectAllKbs}>
+                Select All
+              </Button>
+              <Button variant="outline" onClick={clearSelection}>
+                Clear
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={() => setBulkDeleteDialogOpen(true)}
+                disabled={selectedKbIds.size === 0}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete Selected ({selectedKbIds.size})
+              </Button>
+              <Button variant="ghost" onClick={exitSelectionMode}>
+                <X className="mr-2 h-4 w-4" />
+                Cancel
+              </Button>
+            </>
+          )}
+        </div>
       </div>
       
       <p className="text-muted-foreground">
@@ -186,18 +290,37 @@ export default function KnowledgeBasesPage() {
         <Card className="w-full p-12 text-center">
           <CardContent>
             <p className="text-muted-foreground mb-4">No knowledge bases found</p>
-            <Button onClick={() => setNewKbDialogOpen(true)}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Create your first knowledge base
-            </Button>
+            {hasEditPermission && (
+              <Button onClick={() => setNewKbDialogOpen(true)}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Create your first knowledge base
+              </Button>
+            )}
           </CardContent>
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {knowledgeBases.map((kb) => (
-            <Card key={kb.id} className="overflow-hidden">
-              <CardHeader>
-                <CardTitle className="truncate">{kb.name}</CardTitle>
+            <Card 
+              key={kb.id} 
+              className={`overflow-hidden transition-all ${
+                isSelectionMode && selectedKbIds.has(kb.id) 
+                  ? 'ring-2 ring-primary bg-primary/5' 
+                  : ''
+              }`}
+            >
+              <CardHeader className="relative">
+                {isSelectionMode && (
+                  <div className="absolute top-4 right-4">
+                    <Checkbox
+                      checked={selectedKbIds.has(kb.id)}
+                      onCheckedChange={() => toggleKbSelection(kb.id)}
+                    />
+                  </div>
+                )}
+                <CardTitle className={`truncate ${isSelectionMode ? 'pr-12' : ''}`}>
+                  {kb.name}
+                </CardTitle>
                 <CardDescription>
                   {kb.documents?.count} document{kb.documents?.count !== 1 ? 's' : ''}
                 </CardDescription>
@@ -210,42 +333,46 @@ export default function KnowledgeBasesPage() {
                   Created: {new Date(kb.created_at).toLocaleDateString()}
                 </p>
               </CardContent>
-              <CardFooter className="flex justify-between p-4 bg-slate-50 gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => viewDocuments(kb)}
-                >
-                  View Documents
-                </Button>
-                <div className="flex gap-1">
+              {!isSelectionMode && (
+                <CardFooter className="flex justify-between p-4 bg-slate-50 gap-2">
                   <Button 
-                    variant="ghost" 
-                    size="icon"
-                    title="Upload Files"
-                    onClick={() => openUploadFileDialog(kb)}
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => viewDocuments(kb)}
                   >
-                    <FileUp className="h-4 w-4" />
+                    View Documents
                   </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    title="Add URL"
-                    onClick={() => openUploadUrlDialog(kb)}
-                  >
-                    <Globe className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="text-red-500"
-                    title="Delete Knowledge Base"
-                    onClick={() => openDeleteDialog(kb)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardFooter>
+                  {hasEditPermission && (
+                    <div className="flex gap-1">
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        title="Upload Files"
+                        onClick={() => openUploadFileDialog(kb)}
+                      >
+                        <FileUp className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        title="Add URL"
+                        onClick={() => openUploadUrlDialog(kb)}
+                      >
+                        <Globe className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="text-red-500"
+                        title="Delete Knowledge Base"
+                        onClick={() => openDeleteDialog(kb)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                </CardFooter>
+              )}
             </Card>
           ))}
         </div>
@@ -277,6 +404,13 @@ export default function KnowledgeBasesPage() {
         onOpenChange={setDeleteDialogOpen}
         knowledgeBase={selectedKb}
         onConfirm={() => selectedKb && handleDeleteKnowledgeBase(selectedKb)}
+      />
+
+      <BulkDeleteKnowledgeBasesDialog
+        open={bulkDeleteDialogOpen}
+        onOpenChange={setBulkDeleteDialogOpen}
+        knowledgeBases={selectedKnowledgeBasesData}
+        onConfirm={handleBulkDeleteKnowledgeBases}
       />
     </div>
   )

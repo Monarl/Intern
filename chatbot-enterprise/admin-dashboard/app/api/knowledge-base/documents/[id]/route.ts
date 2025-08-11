@@ -32,8 +32,9 @@ export async function GET(
     const userRole = await getUserRole(user.id);
     console.log('User role in documents API:', userRole);
     
-    if (userRole !== 'Super Admin' && userRole !== 'Knowledge Manager') {
-      return NextResponse.json({ error: 'Insufficient permissions - Only Super Admin and Knowledge Manager roles can access this' }, { status: 403 });
+    // Allow all authenticated users to view documents
+    if (!userRole) {
+      return NextResponse.json({ error: 'No role assigned to user' }, { status: 403 });
     }
     
     // Use admin client for database operations after authentication check

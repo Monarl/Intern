@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
 
-async function handleFileUpload(file: File, knowledgeBaseName: string) {
+export async function handleFileUpload(file: File, knowledgeBaseName: string) {
   // 1) upsert (or lookup) your KB as before…
   const { data, error: kbError } = await supabase
     .from('knowledge_bases')
@@ -39,7 +39,7 @@ async function handleFileUpload(file: File, knowledgeBaseName: string) {
   const actualFilename = actualPath.split('/').pop()
 
   // 4) notify n8n with path, filename, and KB id
-  await fetch('http://localhost:5678/webhook/upload-doc', {
+  await fetch(process.env.N8N_UPLOAD_DOC_WEBHOOK_URL || 'http://localhost:5678/webhook/upload-doc', {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
     body:    JSON.stringify({

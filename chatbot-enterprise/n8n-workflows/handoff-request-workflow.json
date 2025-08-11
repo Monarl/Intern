@@ -1,0 +1,273 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "handoff-request",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "5cb00fd3-9735-4358-a7d1-4eff0f785f8c",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        540,
+        320
+      ],
+      "webhookId": "b1b49d7c-9440-46c9-b26c-9ff7a18b1d5d"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1a1a1a1a-1a1a-1a1a-1a1a-1a1a1a1a1a1a",
+              "name": "sessionId",
+              "value": "={{ $json.body.sessionId }}",
+              "type": "string"
+            },
+            {
+              "id": "2b2b2b2b-2b2b-2b2b-2b2b-2b2b2b2b2b2b",
+              "name": "chatbotId",
+              "value": "={{ $json.body.chatbotId }}",
+              "type": "string"
+            },
+            {
+              "id": "3c3c3c3c-3c3c-3c3c-3c3c-3c3c3c3c3c3c",
+              "name": "userIdentifier",
+              "value": "={{ $json.body.userIdentifier }}",
+              "type": "string"
+            },
+            {
+              "id": "4d4d4d4d-4d4d-4d4d-4d4d-4d4d4d4d4d4d",
+              "name": "reason",
+              "value": "={{ $json.body.reason }}",
+              "type": "string"
+            },
+            {
+              "id": "5e5e5e5e-5e5e-5e5e-5e5e-5e5e5e5e5e5e",
+              "name": "timestamp",
+              "value": "={{ $json.body.timestamp }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1dfa0b6f-f3a9-4941-be2e-e2a8d556b0ae",
+      "name": "Process Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        760,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n  au.email,\n  ur.name as role_name\nFROM auth.users au\nJOIN user_role_mappings urm ON au.id = urm.user_id\nJOIN user_roles ur ON urm.role_id = ur.id\nWHERE ur.name IN ('Support Agent')\nAND au.email IS NOT NULL",
+        "options": {}
+      },
+      "id": "a04f5c32-b009-4423-a66e-ba4a2a6fa99b",
+      "name": "Get Support Agent Emails",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        980,
+        320
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "5LPqoPG4p0V8EFcd",
+          "name": "Postgres account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract emails from the query result\nconst supportAgents = $input.all();\nconst emails = [];\n\n// Handle both single result and multiple results\nsupportAgents.forEach(agent => {\n  if (agent.json && agent.json.email) {\n    emails.push(agent.json.email);\n  }\n});\n\n// Get session data from previous node\nconst sessionData = $('Process Data').first().json;\n\n// Create formatted timestamp\nconst timestamp = new Date(sessionData.timestamp);\nconst formattedTime = timestamp.toLocaleString('vi-VN', {\n  year:   'numeric',\n  month:  'long',     // \"tháng 7\", \"tháng 8\", ...\n  day:    'numeric',\n  hour:   '2-digit',\n  minute: '2-digit',\n  timeZone: 'Asia/Ho_Chi_Minh',\n  hour12: false       // → 24-giờ; bỏ dòng này nếu muốn 12-giờ\n});\n\n// Create dashboard link\nconst dashboardUrl = `${process.env.NEXT_PUBLIC_ADMIN_DASHBOARD_URL || 'http://localhost:3000'}/dashboard/chats/${sessionData.sessionId}`;\n\nreturn {\n  json: {\n    emails: emails,\n    sessionId: sessionData.sessionId,\n    chatbotId: sessionData.chatbotId,\n    userIdentifier: sessionData.userIdentifier,\n    reason: sessionData.reason,\n    timestamp: sessionData.timestamp,\n    formattedTime: formattedTime,\n    dashboardUrl: dashboardUrl,\n    emailCount: emails.length\n  }\n};"
+      },
+      "id": "333a227d-11cf-4be5-bf66-ff4c5f81333a",
+      "name": "Format Email Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.emails.join(',') }}",
+        "subject": "=🚨 Human Support Requested - Session {{ $json.sessionId.substring(0, 8) }}...",
+        "message": "=<!DOCTYPE html>\n<html>\n<head>\n    <meta charset=\"utf-8\">\n    <style>\n        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }\n        .container { max-width: 600px; margin: 0 auto; padding: 20px; }\n        .header { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center; }\n        .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }\n        .alert-icon { font-size: 48px; margin-bottom: 10px; }\n        .details { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b; }\n        .detail-row { display: flex; justify-content: space-between; margin: 10px 0; }\n        .label { font-weight: 600; color: #374151; }\n        .value { color: #6b7280; font-family: monospace; background: #f3f4f6; padding: 2px 6px; border-radius: 4px; }\n        .cta-button { display: inline-block; background: #f59e0b; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; }\n        .cta-button:hover { background: #d97706; }\n        .footer { text-align: center; color: #9ca3af; font-size: 14px; margin-top: 20px; }\n        .urgency { background: #fef3c7; border: 1px solid #f59e0b; padding: 15px; border-radius: 6px; margin: 15px 0; }\n    </style>\n</head>\n<body>\n    <div class=\"container\">\n        <div class=\"header\">\n            <div class=\"alert-icon\">🚨</div>\n            <h1 style=\"margin: 0;\">Human Support Requested</h1>\n            <p style=\"margin: 10px 0 0 0; opacity: 0.9;\">Immediate attention required</p>\n        </div>\n        \n        <div class=\"content\">\n            <div class=\"urgency\">\n                <strong>⚡ Action Required:</strong> A customer has requested to speak with a human agent.\n            </div>\n            \n            <div class=\"details\">\n                <h3 style=\"margin-top: 0; color: #f59e0b;\">📋 Session Details</h3>\n                \n                <div class=\"detail-row\">\n                    <span class=\"label\">Session ID:</span>\n                    <span class=\"value\">{{ $json.sessionId }}</span>\n                </div>\n                \n                <div class=\"detail-row\">\n                    <span class=\"label\">Chatbot ID:</span>\n                    <span class=\"value\">{{ $json.chatbotId }}</span>\n                </div>\n                \n                <div class=\"detail-row\">\n                    <span class=\"label\">User ID:</span>\n                    <span class=\"value\">{{ $json.userIdentifier }}</span>\n                </div>\n                \n                <div class=\"detail-row\">\n                    <span class=\"label\">Request Time:</span>\n                    <span class=\"value\">{{ $json.formattedTime }} UTC</span>\n                </div>\n                \n                <div class=\"detail-row\">\n                    <span class=\"label\">Reason:</span>\n                    <span class=\"value\">{{ $json.reason }}</span>\n                </div>\n            </div>\n            \n            <div style=\"text-align: center;\">\n                <a href=\"{{ $json.dashboardUrl }}\" class=\"cta-button\">\n                    🎧 Take Over Chat Session\n                </a>\n            </div>\n            \n            <div style=\"background: #e5f7ff; border: 1px solid #0ea5e9; padding: 15px; border-radius: 6px; margin: 20px 0;\">\n                <strong>💡 Next Steps:</strong>\n                <ol style=\"margin: 10px 0; padding-left: 20px;\">\n                    <li>Click the button above to access the chat session</li>\n                    <li>Review the conversation history</li>\n                    <li>Take over the conversation from the bot</li>\n                    <li>Assist the customer with their request</li>\n                    <li>Hand back to bot when appropriate</li>\n                </ol>\n            </div>\n        </div>\n        \n        <div class=\"footer\">\n            <p>This email was sent automatically by the Enterprise Chatbot System.<br>\n            Session: {{ $json.sessionId }}</p>\n        </div>\n    </div>\n</body>\n</html>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "ed18148c-b9bf-4666-b3f9-14a933beabab",
+      "name": "Send Email to Support Agents",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1420,
+        320
+      ],
+      "webhookId": "693d8f43-cf93-4eca-9c32-c103f037c527",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "k0QxRJzpZeCkcVIL",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"message\": \"Handoff request processed and support team notified\",\n  \"sessionId\": \"{{ $('Process Data').item.json.sessionId }}\",\n  \"emailsSent\": {{ $('Format Email Data').item.json.emailCount }},\n  \"timestamp\": \"{{ $('Process Data').item.json.timestamp }}\"\n}",
+        "options": {}
+      },
+      "id": "e2c761ee-8c03-4caf-84b4-1a26ca81ffbd",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1640,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0j0j2j1j-7j7j-0j4j-4j0j-2j1j7j7j0j4j",
+              "name": "error",
+              "value": "={{ $json.error.message || 'Unknown error occurred' }}",
+              "type": "string"
+            },
+            {
+              "id": "1k1k3k2k-8k8k-1k5k-5k1k-3k2k8k8k1k5k",
+              "name": "sessionId",
+              "value": "={{ $('Process Data').item.json.sessionId || 'unknown' }}",
+              "type": "string"
+            },
+            {
+              "id": "2l2l4l3l-9l9l-2l6l-6l2l-4l3l9l9l2l6l",
+              "name": "timestamp",
+              "value": "={{ new Date().toISOString() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2bc1dcfc-7def-4efc-9b13-3e0bebf27825",
+      "name": "Format Error",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1200,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": \"{{ $json.error }}\",\n  \"sessionId\": \"{{ $json.sessionId }}\",\n  \"timestamp\": \"{{ $json.timestamp }}\"\n}",
+        "options": {}
+      },
+      "id": "63ff4be3-396e-4daa-a405-c4e1aa64b97f",
+      "name": "Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1420,
+        520
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Process Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Data": {
+      "main": [
+        [
+          {
+            "node": "Get Support Agent Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Support Agent Emails": {
+      "main": [
+        [
+          {
+            "node": "Format Email Data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Email Data": {
+      "main": [
+        [
+          {
+            "node": "Send Email to Support Agents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email to Support Agents": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Error": {
+      "main": [
+        [
+          {
+            "node": "Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2f9a676940fcfba0fc018f4ccba4b9b9a7ad04946c86aa72d40912f4039eb118"
+  }
+}

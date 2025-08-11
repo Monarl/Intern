@@ -1,0 +1,10 @@
+{
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "brave-search",
+    "filesystem", 
+    "supabase",
+    "git",
+    "n8n-mcp"
+  ]
+}

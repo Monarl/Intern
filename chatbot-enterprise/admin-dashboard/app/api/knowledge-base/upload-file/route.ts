@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
 
     // Trigger n8n webhook for document processing
     try {
-      const response = await fetch('http://localhost:5678/webhook/upload-doc', {
+      const response = await fetch(process.env.N8N_UPLOAD_DOC_WEBHOOK_URL || 'http://localhost:5678/webhook/upload-doc', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

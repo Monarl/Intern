@@ -1,13 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useSupabase } from '@/lib/supabase/context'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { formatDistanceToNow } from 'date-fns'
-import { MessageSquare, Users, BarChart, Activity } from 'lucide-react'
+import { MessageSquare, Users, BarChart, Activity, AlertCircle, Clock, UserCheck, Search, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import Link from 'next/link'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -20,6 +22,9 @@ interface SessionMetadata {
   last_agent_id?: string
   widget_position?: string
   user_agent?: string
+  handoff_requested?: string | null
+  handoff_requested_at?: string | null
+  handoff_reason?: string | null
   [key: string]: unknown
 }
 
@@ -44,22 +49,178 @@ type ChatStats = {
   active_sessions: number
   messages_today: number
   avg_response_time: number
+  avg_session_duration: number
+  peak_hour: string
+  human_handoffs: number
+  satisfaction_rate: number
+}
+
+// Helper functions for formatting
+const formatDuration = (seconds: number): string => {
+  if (seconds === 0) return '0s'
+  
+  const minutes = Math.floor(seconds / 60)
+  const remainingSeconds = seconds % 60
+  
+  if (minutes === 0) return `${remainingSeconds}s`
+  return `${minutes}m ${remainingSeconds}s`
+}
+
+const formatHour = (hourString: string): string => {
+  const hour = parseInt(hourString.split(':')[0], 10)
+  const isPM = hour >= 12
+  const displayHour = hour % 12 || 12 // Convert 0 to 12
+  return `${displayHour}:00 ${isPM ? 'PM' : 'AM'} - ${displayHour + 1}:00 ${isPM ? 'PM' : 'AM'}`
 }
 
 export default function ChatsPage() {
   const { user, userRole, isLoading: authLoading, supabase } = useSupabase()
+  const searchParams = useSearchParams()
+  
+  // Get initial state from URL parameters
+  const initialTab = searchParams.get('tab') || (userRole === 'Support Agent' ? 'handoffs' : 'overview')
+  const initialSearch = searchParams.get('search') || ''
+  
   const [sessions, setSessions] = useState<ChatSession[]>([])
+  const [filteredSessions, setFilteredSessions] = useState<ChatSession[]>([])
+  const [pendingHandoffs, setPendingHandoffs] = useState<ChatSession[]>([])
+  const [searchQuery, setSearchQuery] = useState(initialSearch)
+  const [activeTab, setActiveTab] = useState(initialTab)
+  const [isSearching, setIsSearching] = useState(false)
   const [stats, setStats] = useState<ChatStats>({
     total_sessions: 0,
     active_sessions: 0,
     messages_today: 0,
-    avg_response_time: 0
+    avg_response_time: 0,
+    avg_session_duration: 0,
+    peak_hour: '00:00',
+    human_handoffs: 0,
+    satisfaction_rate: 0
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   // Check if user has access to this page
   const hasAccess = ALLOWED_ROLES.includes(userRole as string)
+  const isSupportAgent = userRole === 'Support Agent'
+
+  // Search functionality
+  const performSearch = useCallback(async (query: string) => {
+    if (!supabase || !query.trim()) {
+      setFilteredSessions(sessions)
+      return
+    }
+
+    setIsSearching(true)
+    try {
+      // Search in chat sessions metadata and user identifiers
+      const sessionResults = sessions.filter(session => 
+        session.user_identifier?.toLowerCase().includes(query.toLowerCase()) ||
+        session.chatbot_name?.toLowerCase().includes(query.toLowerCase()) ||
+        session.platform?.toLowerCase().includes(query.toLowerCase()) ||
+        session.status?.toLowerCase().includes(query.toLowerCase())
+      )
+
+      // Search in chat messages content
+      const { data: messageResults, error: messageError } = await supabase
+        .from('chat_messages')
+        .select(`
+          session_id,
+          content,
+          chat_sessions!inner(
+            *,
+            chatbots(name)
+          )
+        `)
+        .ilike('content', `%${query}%`)
+        .limit(100)
+
+      if (messageError) {
+        console.warn('Error searching messages:', messageError)
+      }
+
+      // Get unique session IDs from message search results
+      const messageSessionIds = new Set(
+        (messageResults || []).map(msg => msg.session_id)
+      )
+
+      // Combine results from both searches
+      const messageMatchingSessions = sessions.filter(session => 
+        messageSessionIds.has(session.session_id)
+      )
+
+      // Merge and deduplicate results
+      const allResults = [...sessionResults]
+      messageMatchingSessions.forEach(session => {
+        if (!allResults.find(s => s.session_id === session.session_id)) {
+          allResults.push(session)
+        }
+      })
+
+      // Sort by relevance (exact matches first, then by last activity)
+      allResults.sort((a, b) => {
+        const aExact = a.user_identifier?.toLowerCase().includes(query.toLowerCase()) ||
+                      a.chatbot_name?.toLowerCase().includes(query.toLowerCase())
+        const bExact = b.user_identifier?.toLowerCase().includes(query.toLowerCase()) ||
+                      b.chatbot_name?.toLowerCase().includes(query.toLowerCase())
+        
+        if (aExact && !bExact) return -1
+        if (!aExact && bExact) return 1
+        
+        return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+      })
+
+      setFilteredSessions(allResults)
+    } catch (error) {
+      console.error('Search error:', error)
+      setFilteredSessions(sessions)
+    } finally {
+      setIsSearching(false)
+    }
+  }, [sessions, supabase])
+
+  // Handle search input changes with debounce
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (searchQuery.trim()) {
+        performSearch(searchQuery)
+      } else {
+        setFilteredSessions(sessions)
+      }
+    }, 300)
+
+    return () => clearTimeout(timeoutId)
+  }, [searchQuery, performSearch, sessions])
+
+  // Clear search
+  const clearSearch = () => {
+    setSearchQuery('')
+    setFilteredSessions(sessions)
+    updateUrlParams('', activeTab)
+  }
+
+  // Update URL parameters to preserve state
+  const updateUrlParams = (search: string, tab: string) => {
+    const params = new URLSearchParams()
+    if (search) params.set('search', search)
+    if (tab !== (userRole === 'Support Agent' ? 'handoffs' : 'overview')) {
+      params.set('tab', tab)
+    }
+    const newUrl = `/dashboard/chats${params.toString() ? `?${params.toString()}` : ''}`
+    window.history.replaceState({}, '', newUrl)
+  }
+
+  // Handle tab change
+  const handleTabChange = (newTab: string) => {
+    setActiveTab(newTab)
+    updateUrlParams(searchQuery, newTab)
+  }
+
+  // Handle search query change
+  const handleSearchChange = (newQuery: string) => {
+    setSearchQuery(newQuery)
+    updateUrlParams(newQuery, activeTab)
+  }
 
   // Load chat sessions and stats
   useEffect(() => {
@@ -107,6 +268,40 @@ export default function ChatsPage() {
         )
         
         setSessions(sessionsWithCounts)
+        setFilteredSessions(sessionsWithCounts) // Initialize filtered sessions
+        
+        // Get pending handoff sessions (for Support Agents)
+        if (isSupportAgent) {
+          const { data: handoffSessions, error: handoffError } = await supabase
+            .from('chat_sessions')
+            .select(`
+              *,
+              chatbots(name)
+            `)
+            .eq('status', 'active')
+            .eq('metadata->>handoff_requested', 'true')
+            .order('metadata->handoff_requested_at', { ascending: true })
+          
+          if (handoffError) {
+            console.warn('Error fetching handoff sessions:', handoffError)
+          } else {
+            const handoffWithCounts = await Promise.all(
+              (handoffSessions || []).map(async (session: ChatSession) => {
+                const { count } = await supabase
+                  .from('chat_messages')
+                  .select('*', { count: 'exact', head: true })
+                  .eq('session_id', session.session_id)
+                
+                return {
+                  ...session,
+                  chatbot_name: session.chatbots?.name || 'Unknown',
+                  message_count: count || 0
+                }
+              })
+            )
+            setPendingHandoffs(handoffWithCounts)
+          }
+        }
         
         // Get overall stats
         const today = new Date()
@@ -126,11 +321,112 @@ export default function ChatsPage() {
           .select('*', { count: 'exact', head: true })
           .gte('created_at', today.toISOString())
         
+        // Calculate average response time
+        const { data: messages, error: messagesError } = await supabase
+          .from('chat_messages')
+          .select('*')
+          .order('created_at', { ascending: true })
+          
+        if (messagesError) {
+          console.warn('Error getting messages for response time:', messagesError)
+        }
+        
+        // Calculate average response time
+        let totalResponseTime = 0
+        let responseCount = 0
+        const hourCounts: Record<number, number> = {}
+        
+        if (messages && messages.length > 1) {
+          for (let i = 1; i < messages.length; i++) {
+            const prevMessage = messages[i-1]
+            const currentMessage = messages[i]
+            
+            // Count messages by hour for peak hour calculation
+            const messageHour = new Date(currentMessage.created_at).getHours()
+            hourCounts[messageHour] = (hourCounts[messageHour] || 0) + 1
+            
+            // Only calculate response time for bot responses to user messages
+            if (prevMessage.role === 'user' && currentMessage.role === 'assistant') {
+              const prevTime = new Date(prevMessage.created_at).getTime()
+              const currentTime = new Date(currentMessage.created_at).getTime()
+              const responseTime = (currentTime - prevTime) / 1000 // in seconds
+              
+              if (responseTime > 0 && responseTime < 300) { // Filter out outliers (>5 min)
+                totalResponseTime += responseTime
+                responseCount++
+              }
+            }
+          }
+        }
+        
+        const avgResponseTime = responseCount > 0 
+          ? Math.round(totalResponseTime / responseCount) 
+          : 0
+          
+        // Find peak hour
+        let peakHour = 0
+        let maxCount = 0
+        
+        Object.entries(hourCounts).forEach(([hour, count]) => {
+          if (count > maxCount) {
+            maxCount = count
+            peakHour = parseInt(hour)
+          }
+        })
+        
+        // Calculate average session duration for completed sessions
+        let totalDuration = 0
+        let completedSessions = 0
+        
+        for (const session of sessionsWithCounts) {
+          if (session.status === 'completed') {
+            // Get first and last message for this session
+            const { data: sessionMessages, error: sessionMessagesError } = await supabase
+              .from('chat_messages')
+              .select('created_at')
+              .eq('session_id', session.session_id)
+              .order('created_at', { ascending: true })
+              
+            if (sessionMessagesError) {
+              console.warn(`Error getting messages for session ${session.session_id}:`, sessionMessagesError)
+              continue
+            }
+            
+            if (sessionMessages && sessionMessages.length >= 2) {
+              const firstMessage = new Date(sessionMessages[0].created_at).getTime()
+              const lastMessage = new Date(sessionMessages[sessionMessages.length - 1].created_at).getTime()
+              const duration = (lastMessage - firstMessage) / 1000 // in seconds
+              
+              if (duration > 0) {
+                totalDuration += duration
+                completedSessions++
+              }
+            }
+          }
+        }
+        
+        const avgSessionDuration = completedSessions > 0 
+          ? Math.round(totalDuration / completedSessions) 
+          : 0
+          
+        // Count human handoffs
+        const humanHandoffs = sessionsWithCounts.filter(
+          session => session.metadata?.had_human_intervention === true
+        ).length
+        
+        // Calculate satisfaction rate (placeholder implementation - would need actual feedback data)
+        // Assuming 85% satisfaction rate as a reasonable placeholder based on metadata
+        const satisfactionRate = 85
+        
         setStats({
           total_sessions: totalSessions || 0,
           active_sessions: activeSessions || 0,
           messages_today: messagesToday || 0,
-          avg_response_time: 2.5 // Placeholder for now
+          avg_response_time: avgResponseTime,
+          avg_session_duration: avgSessionDuration,
+          peak_hour: `${peakHour}:00`,
+          human_handoffs: humanHandoffs,
+          satisfaction_rate: satisfactionRate
         })
         
       } catch (err: unknown) {
@@ -143,7 +439,7 @@ export default function ChatsPage() {
     }
 
     fetchChatSessions()
-  }, [user, hasAccess, authLoading, supabase])
+  }, [user, hasAccess, authLoading, supabase, isSupportAgent])
 
   if (authLoading) {
     return <div className="p-4">Loading authentication...</div>
@@ -173,10 +469,23 @@ export default function ChatsPage() {
         </div>
       )}
 
-      <Tabs defaultValue="overview" className="w-full mb-8">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full mb-8">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="sessions">Chat Sessions</TabsTrigger>
+          {isSupportAgent && (
+            <TabsTrigger value="handoffs" className="relative">
+              Support Queue
+              {pendingHandoffs.length > 0 && (
+                <Badge 
+                  variant="destructive" 
+                  className="ml-2 h-5 w-5 p-0 text-xs flex items-center justify-center"
+                >
+                  {pendingHandoffs.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+          )}
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
         
@@ -242,7 +551,7 @@ export default function ChatsPage() {
                 {loading ? (
                   <Skeleton className="h-8 w-24" />
                 ) : (
-                  <div className="text-2xl font-bold">{stats.avg_response_time}s</div>
+                  <div className="text-2xl font-bold">{formatDuration(stats.avg_response_time)}</div>
                 )}
               </CardContent>
             </Card>
@@ -285,7 +594,7 @@ export default function ChatsPage() {
                               {session.status}
                             </Badge>
                             <Button variant="outline" size="sm" asChild>
-                              <Link href={`/dashboard/chats/${session.session_id}`}>
+                              <Link href={`/dashboard/chats/${session.session_id}?returnTab=${activeTab}${searchQuery ? `&returnSearch=${encodeURIComponent(searchQuery)}` : ''}`}>
                                 View
                               </Link>
                             </Button>
@@ -337,7 +646,43 @@ export default function ChatsPage() {
         <TabsContent value="sessions" className="pt-4">
           <Card>
             <CardHeader>
-              <CardTitle>All Chat Sessions</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle>All Chat Sessions</CardTitle>
+                <div className="relative w-96">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Input
+                      placeholder="Search by user, chatbot, message content..."
+                      value={searchQuery}
+                      onChange={(e) => handleSearchChange(e.target.value)}
+                      className="pl-10 pr-10"
+                    />
+                    {searchQuery && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={clearSearch}
+                        className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 hover:bg-muted"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                  {isSearching && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              {searchQuery && (
+                <div className="text-sm text-muted-foreground">
+                  {filteredSessions.length} result{filteredSessions.length !== 1 ? 's' : ''} found
+                  {filteredSessions.length > 0 && searchQuery && (
+                    <span> for &ldquo;{searchQuery}&rdquo;</span>
+                  )}
+                </div>
+              )}
             </CardHeader>
             <CardContent>
               {loading ? (
@@ -346,9 +691,9 @@ export default function ChatsPage() {
                     <Skeleton key={i} className="h-12 w-full" />
                   ))}
                 </div>
-              ) : sessions.length === 0 ? (
+              ) : filteredSessions.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  No chat sessions found
+                  {searchQuery ? 'No sessions found matching your search.' : 'No chat sessions found'}
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -365,7 +710,7 @@ export default function ChatsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {sessions.map((session) => (
+                      {filteredSessions.map((session) => (
                         <tr key={session.session_id} className="border-b hover:bg-slate-50">
                           <td className="py-3 px-2">
                             <div className="font-medium">
@@ -394,7 +739,7 @@ export default function ChatsPage() {
                           </td>
                           <td className="py-3 px-2 text-right">
                             <Button variant="outline" size="sm" asChild>
-                              <Link href={`/dashboard/chats/${session.session_id}`}>
+                              <Link href={`/dashboard/chats/${session.session_id}?returnTab=${activeTab}${searchQuery ? `&returnSearch=${encodeURIComponent(searchQuery)}` : ''}`}>
                                 View
                               </Link>
                             </Button>
@@ -408,6 +753,95 @@ export default function ChatsPage() {
             </CardContent>
           </Card>
         </TabsContent>
+        
+        {/* Support Agent Handoff Queue */}
+        {isSupportAgent && (
+          <TabsContent value="handoffs" className="pt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5 text-orange-500" />
+                  Pending Support Requests
+                  {pendingHandoffs.length > 0 && (
+                    <Badge variant="destructive">{pendingHandoffs.length}</Badge>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="space-y-2">
+                    {[...Array(5)].map((_, i) => (
+                      <Skeleton key={i} className="h-16 w-full" />
+                    ))}
+                  </div>
+                ) : pendingHandoffs.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <UserCheck className="h-12 w-12 mx-auto mb-4 text-green-500" />
+                    <h3 className="text-lg font-medium text-foreground mb-2">
+                      All caught up!
+                    </h3>
+                    <p>No pending support requests at this time.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {pendingHandoffs.map((session) => (
+                      <div 
+                        key={session.session_id} 
+                        className="border border-orange-200 bg-orange-50 rounded-lg p-4 hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <Clock className="h-4 w-4 text-orange-600" />
+                              <span className="text-sm text-orange-700 font-medium">
+                                Waiting {formatDistanceToNow(
+                                  new Date(session.metadata?.handoff_requested_at || session.updated_at || new Date()), 
+                                  { addSuffix: true }
+                                )}
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                              <div>
+                                <span className="text-muted-foreground">User:</span>
+                                <div className="font-medium">
+                                  {session.user_identifier?.substring(0, 8)}...
+                                </div>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Chatbot:</span>
+                                <div className="font-medium">{session.chatbot_name}</div>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Messages:</span>
+                                <div className="font-medium">{session.message_count}</div>
+                              </div>
+                            </div>
+                            {typeof session.metadata?.handoff_reason === 'string' && (
+                              <div className="mt-2 p-2 bg-white/50 rounded text-sm">
+                                <span className="text-muted-foreground">Reason:</span>
+                                <span className="ml-2">{String(session.metadata.handoff_reason)}</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="ml-4">
+                            <Button 
+                              asChild
+                              className="bg-blue-600 hover:bg-blue-700"
+                            >
+                              <Link href={`/dashboard/chats/${session.session_id}?returnTab=${activeTab}${searchQuery ? `&returnSearch=${encodeURIComponent(searchQuery)}` : ''}`}>
+                                Take Over Chat
+                              </Link>
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
         
         <TabsContent value="analytics" className="pt-4">
           <Card>
@@ -438,7 +872,9 @@ export default function ChatsPage() {
                       </div>
                       <div className="flex justify-between border-b pb-2">
                         <span>Average Session Duration</span>
-                        <span className="font-medium">3m 45s</span>
+                        <span className="font-medium">
+                          {formatDuration(stats.avg_session_duration)}
+                        </span>
                       </div>
                       <div className="flex justify-between border-b pb-2">
                         <span>Messages per Session</span>
@@ -463,19 +899,19 @@ export default function ChatsPage() {
                       </div>
                       <div className="flex justify-between border-b pb-2">
                         <span>Average Response Time</span>
-                        <span className="font-medium">{stats.avg_response_time}s</span>
+                        <span className="font-medium">{formatDuration(stats.avg_response_time)}</span>
                       </div>
                       <div className="flex justify-between border-b pb-2">
                         <span>Peak Hour</span>
-                        <span className="font-medium">2:00 PM - 3:00 PM</span>
+                        <span className="font-medium">{formatHour(stats.peak_hour)}</span>
                       </div>
                       <div className="flex justify-between border-b pb-2">
                         <span>Human Handoffs</span>
-                        <span className="font-medium">3</span>
+                        <span className="font-medium">{stats.human_handoffs}</span>
                       </div>
                       <div className="flex justify-between border-b pb-2">
                         <span>Satisfaction Rate</span>
-                        <span className="font-medium">92%</span>
+                        <span className="font-medium">{stats.satisfaction_rate}%</span>
                       </div>
                     </div>
                   )}
