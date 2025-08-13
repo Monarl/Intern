@@ -21,4 +21,6 @@ Later:
 ## Question to ask:
 
 
-- Create the sql to create the current database schema and functions in supabase and add the guide to run it in the readme file.
+- Create the sql to create the current database schema, RLS policies and functions in supabase and add the guide to run it in the readme file 7. Database Setup.
+
+- Disable the Change Your Role functionality in the dashboard page since it is only for testing purposes. But don't delete it so i can enable it if the need arises.

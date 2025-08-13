@@ -73,8 +73,48 @@ A comprehensive enterprise chatbot system with RAG (Retrieval Augmented Generati
    - Open n8n editor at http://localhost:5678
    - Import workflows from `chatbot-enterprise/n8n-workflows/`
    - Configure webhooks and credentials as needed
-   
+
 7. **Database Setup**
+
+   **Important**: Run these SQL migrations in order to set up your Supabase database:
+
+   ```bash
+   # Navigate to migrations directory
+   cd chatbot-enterprise/migrations
+   ```
+
+   **Migration Order:**
+   1. **01_enable_extensions.sql** - Enables required PostgreSQL extensions (vector, pgcrypto, uuid-ossp)
+   2. **02_create_tables.sql** - Creates all application tables with proper constraints
+   3. **03_enable_rls.sql** - Enables Row Level Security with comprehensive RBAC policies  
+   4. **04_create_functions_triggers.sql** - Creates utility functions, RAG search functions, and triggers
+   5. **05_final_setup.sql** - Final optimizations, indexes, views, and security configurations
+
+   **To apply migrations:**
+   1. Open your Supabase project dashboard
+   2. Go to SQL Editor
+   3. Copy and paste the content of each migration file (in order)
+   4. Execute each migration by clicking "Run"
+   5. Verify no errors occurred
+
+   **After running migrations:**
+   - Create storage bucket `chatbot-documents` in Supabase Dashboard → Storage
+   - Set storage policies for file uploads (see [Migrations](./chatbot-enterprise/migrations/README.md) for reference)
+   
+   **Default User Roles Created:**
+   - `Super Admin` - Full system access
+   - `Knowledge Manager` - Manage knowledge bases and documents
+   - `Chatbot Manager` - Configure chatbots and integrations  
+   - `Analyst/Reporter` - View analytics and reports
+   - `Support Agent` - Handle customer support escalations
+
+   **First User Setup:**
+   After running migrations, register your first user through the admin dashboard, then manually assign the `Super Admin` role via SQL:
+   ```sql
+   -- Replace 'your-user-id' with the actual user ID from auth.users
+   INSERT INTO public.user_role_mappings (user_id, role_id)
+   SELECT 'your-user-id', id FROM public.user_roles WHERE name = 'Super Admin';
+   ```
 
 
 ## 📊 Database Schema
@@ -281,6 +321,4 @@ This project is proprietary and confidential.
 
 ---
 
-**Last Updated**: July 9, 2025
-**Database Version**: PostgreSQL with pgvector v0.8.0
-**n8n Version**: 1.97.1
+**Last Updated**: August 12, 2025
