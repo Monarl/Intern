@@ -1,5 +1,16 @@
 'use client';
 
+/**
+ * UserRoleInfo Component
+ * 
+ * Displays user role information and permissions.
+ * 
+ * Role changing functionality is disabled by default for production.
+ * To enable role changing for testing purposes:
+ * 1. Set ENABLE_ROLE_CHANGING constant to true
+ * 2. The "Change Your Role" section will become visible in the UI
+ */
+
 import { useState, useEffect } from 'react';
 import { useSupabase } from '@/lib/supabase/context';
 import { getAllRoles, assignRoleToUser } from '@/app/lib/supabase/user-roles';
@@ -20,10 +31,14 @@ export default function UserRoleInfo() {
   const [roles, setRoles] = useState<RoleData[]>([]);
   const [loadingRoles, setLoadingRoles] = useState(false);
   const [changingRole, setChangingRole] = useState(false);
+  
+  // Feature flag to enable/disable role changing functionality
+  // Set to true to enable role changing (for testing purposes)
+  const ENABLE_ROLE_CHANGING = false;
 
   useEffect(() => {
     const loadRoles = async () => {
-      if (user) {
+      if (user && ENABLE_ROLE_CHANGING) {
         console.log('Loading roles with userRole:', userRole);
         setLoadingRoles(true);
         try {
@@ -98,7 +113,8 @@ export default function UserRoleInfo() {
       </CardHeader>
       
       <CardContent>
-        {user && (
+        {/* Role changing functionality - disabled by default for production */}
+        {user && ENABLE_ROLE_CHANGING && (
           <div className="mt-4">
             <h3 className="font-medium text-lg mb-2">Change Your Role</h3>
             <div className="flex flex-wrap gap-2">

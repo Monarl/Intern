@@ -99,7 +99,7 @@ A comprehensive enterprise chatbot system with RAG (Retrieval Augmented Generati
 
    **After running migrations:**
    - Create storage bucket `chatbot-documents` in Supabase Dashboard → Storage
-   - Set storage policies for file uploads (see migration 05 for reference)
+   - Set storage policies for file uploads (see [Migrations](./chatbot-enterprise/migrations/README.md) for reference)
    
    **Default User Roles Created:**
    - `Super Admin` - Full system access
