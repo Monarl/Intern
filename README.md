@@ -67,7 +67,6 @@ A comprehensive enterprise chatbot system with RAG (Retrieval Augmented Generati
    - Admin Dashboard: http://localhost:3000
    - Chat Widget: http://localhost:3001  
    - n8n Editor: http://localhost:5678
-   ```
    
 6. **Set up n8n**
    - Open n8n editor at http://localhost:5678
