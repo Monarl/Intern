@@ -16,6 +16,7 @@ This document describes the implementation of human handoff functionality in the
 - ✨ **Real-time Handback Detection**: Automatically detects when agent hands back to bot
 - ✨ **Button State Restoration**: Restores handoff button after agent handback
 - ✨ **Session Status Monitoring**: Tracks handoff state across page refreshes
+- ✨ **AI Response Blocking**: Prevents AI responses during handoff - messages only go to support agents
 
 #### New State Variables:
 ```typescript
@@ -29,6 +30,7 @@ const [handoffReason, setHandoffReason] = useState('')
 - ✨ **Real-time handback detection**: In message subscription
 - ✨ **Session metadata monitoring**: Watches for handoff flag changes
 - ✨ **Enhanced history loading**: Determines handoff state on page load
+- ✨ **AI Response Control**: Blocks n8n webhook calls during handoff state
 - Updates session metadata with handoff flags
 - Sends system message to chat
 - Optionally triggers n8n webhook
@@ -87,24 +89,28 @@ Agent messages include special metadata:
 1. User clicks the handoff button (👤+) in chat widget
 2. Optional dialog appears for reason input
 3. System message appears: "You have requested to speak with a human agent..."
-4. Chat widget shows "Support request sent" status
+4. Chat widget shows "Connected to support" status with updated placeholder
 5. Handoff button is hidden (`handoffRequested = true`)
-6. Session metadata updated with handoff flags
+6. **AI responses are completely blocked** - no messages sent to n8n workflow
+7. User messages are saved to database for support agents only
+8. Session metadata updated with handoff flags
 
 ### 2. Support Agent Takes Over
 1. Support Agent sees notification in "Support Queue" tab
 2. Agent clicks "Take Over Chat" to open conversation
 3. Agent sees full chat history and handoff context
 4. Agent can send messages (marked with purple avatar)
-5. Agent can hand back to bot when done
+5. **User can continue chatting, but only with the support agent**
+6. Agent can hand back to bot when done
 
 ### 3. Hand Back to Bot ✨ **ENHANCED**
 1. Agent clicks "Hand Back to Bot" button
 2. System sends handback message with `handback_to_bot: true` metadata
 3. **Chat widget automatically detects handback in real-time**
 4. **Handoff button is automatically restored** (`handoffRequested = false`)
-5. **User can request human support again** if needed
-6. Conversation returns to normal bot operation
+5. **AI responses resume** - messages start going to n8n workflow again
+6. **User can request human support again** if needed
+7. Conversation returns to normal bot operation
 
 ### 4. Subsequent Handoff Requests ✨ **NEW**
 1. User can click handoff button again for additional help

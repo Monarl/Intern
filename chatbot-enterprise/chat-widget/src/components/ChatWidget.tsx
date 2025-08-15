@@ -47,6 +47,7 @@ export function ChatWidget({
   const channelRef = useRef<RealtimeChannel | null>(null)
   const prevSessionRef = useRef<string | null>(null)
   const processedIdsRef = useRef<Set<string>>(new Set())
+  const recentMessagesRef = useRef<Map<string, number>>(new Map()) // Track recent message content with timestamps
   const welcomeShownRef = useRef<boolean>(false)
 
   /* ────────────── Supabase client ────────────── */
@@ -402,74 +403,112 @@ export function ChatWidget({
         },
         (payload) => {
           console.log('Real-time message received:', payload);
+          console.log('Current handoffRequested state:', handoffRequested);
           const newMessage = payload.new as any;
           
-          // Skip if we've already processed this message by ID
-          if (processedIdsRef.current.has(newMessage.id)) {
-            console.log('Skipping already processed message:', newMessage.id);
-            return;
-          }
-          
-          if (newMessage.role === 'assistant') {
-            console.log('Adding assistant message from real-time:', newMessage.content);
-            
-            // Check if this is a handback message from an agent
-            if (newMessage.metadata?.handback_to_bot === true) {
-              console.log('Detected handback message, restoring handoff button');
-              setHandoffRequested(false);
+          // Add a small delay to allow direct n8n response to be processed first
+          setTimeout(() => {
+            // Skip if we've already processed this message by ID
+            if (processedIdsRef.current.has(newMessage.id)) {
+              console.log('Skipping already processed message:', newMessage.id);
+              return;
             }
             
-            setMessages(prev => {
-              // Double check if message already exists by ID
-              if (prev.some(msg => msg.id === newMessage.id)) {
-                console.log('Message already in state by ID, skipping:', newMessage.id);
-                return prev;
+            if (newMessage.role === 'assistant') {
+              console.log('Adding assistant message from real-time:', newMessage.content);
+              console.log('Message metadata:', newMessage.metadata);
+              
+              // Check if this is a handback message from an agent
+              if (newMessage.metadata?.handback_to_bot === true) {
+                console.log('🔄 Detected handback message, restoring handoff button');
+                setHandoffRequested(false);
               }
               
-              // Also check for potential duplicate content (same content within 5 seconds)
-              const isDuplicateContent = prev.some(msg => 
-                msg.role === 'assistant' && 
-                msg.content === newMessage.content &&
-                Math.abs(new Date(msg.timestamp).getTime() - new Date(newMessage.created_at).getTime()) < 5000
-              );
-              
-              if (isDuplicateContent) {
-                console.log('Potential duplicate content detected, skipping:', newMessage.content);
-                return prev;
-              }
-              
-              // Special check for welcome messages - if this looks like a welcome message and we already have one
-              const isWelcomeMessage = newMessage.content.toLowerCase().includes('hello') || 
-                                    newMessage.content.toLowerCase().includes('hi there') ||
-                                    newMessage.content.toLowerCase().includes('help you');
-              
-              if (isWelcomeMessage && welcomeShownRef.current) {
-                console.log('Duplicate welcome message detected, skipping:', newMessage.content);
-                return prev;
-              }
-              
-              // If this is a welcome message from n8n, mark it as shown
-              if (isWelcomeMessage) {
-                welcomeShownRef.current = true;
-              }
-              
-              // Add to processed set
-              processedIdsRef.current.add(newMessage.id);
-              
-              return [...prev, {
-                id: newMessage.id,
-                role: newMessage.role,
-                content: newMessage.content,
-                timestamp: newMessage.created_at,
-                metadata: { ...newMessage.metadata, source: 'realtime' }
-              }];
-            });
-            setIsLoading(false);
-          }
+              setMessages(prev => {
+                // Special handling for handback messages - these should always be shown immediately
+                if (newMessage.metadata?.handback_to_bot === true) {
+                  console.log('🔄 Processing handback message - bypassing all filters');
+                  processedIdsRef.current.add(newMessage.id);
+                  setIsLoading(false); // Stop loading for handback messages
+                  return [...prev, {
+                    id: newMessage.id,
+                    role: newMessage.role,
+                    content: newMessage.content,
+                    timestamp: newMessage.created_at,
+                    metadata: { ...newMessage.metadata, source: 'realtime-handback' }
+                  }];
+                }
+                
+                // Double check if message already exists by ID or very recent similar content
+                if (prev.some(msg => msg.id === newMessage.id)) {
+                  console.log('Message already in state by ID, skipping:', newMessage.id);
+                  return prev;
+                }
+                
+                // Global duplicate content check using recentMessagesRef
+                const messageKey = `${newMessage.role}:${newMessage.content.trim()}`;
+                const now = Date.now();
+                const recentTimestamp = recentMessagesRef.current.get(messageKey);
+                
+                if (recentTimestamp && (now - recentTimestamp) < 10000) { // 10 seconds window
+                  console.log('Duplicate content detected via global tracking, skipping:', newMessage.content);
+                  return prev;
+                }
+                
+                // Track this message content
+                recentMessagesRef.current.set(messageKey, now);
+                
+                // Clean up old entries (older than 30 seconds)
+                for (const [key, timestamp] of recentMessagesRef.current.entries()) {
+                  if (now - timestamp > 30000) {
+                    recentMessagesRef.current.delete(key);
+                  }
+                }
+                
+                // Special check for welcome messages - if this looks like a welcome message and we already have one
+                // Exclude handback messages from welcome message detection
+                const isHandbackMessage = newMessage.metadata?.handback_to_bot === true;
+                const isWelcomeMessage = !isHandbackMessage && (
+                  newMessage.content.toLowerCase().includes('hello') || 
+                  newMessage.content.toLowerCase().includes('hi there') ||
+                  newMessage.content.toLowerCase().includes('help you')
+                );
+                
+                if (isWelcomeMessage && welcomeShownRef.current) {
+                  console.log('Duplicate welcome message detected, skipping:', newMessage.content);
+                  return prev;
+                }
+                
+                // If this is a welcome message from n8n, mark it as shown
+                if (isWelcomeMessage) {
+                  welcomeShownRef.current = true;
+                }
+                
+                // Add to processed set
+                processedIdsRef.current.add(newMessage.id);
+                
+                // Stop loading state since we received a response
+                setIsLoading(false);
+                
+                return [...prev, {
+                  id: newMessage.id,
+                  role: newMessage.role,
+                  content: newMessage.content,
+                  timestamp: newMessage.created_at,
+                  metadata: { ...newMessage.metadata, source: 'realtime' }
+                }];
+              });
+            }
+          }, 100); // 100ms delay to allow direct response to be processed first
         }
       )
       .subscribe((status) => {
         console.log('Real-time subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Successfully subscribed to real-time chat messages for session:', sessionId);
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('❌ Real-time subscription error for session:', sessionId);
+        }
       });
 
     channelRef.current = channel;
@@ -510,14 +549,61 @@ export function ChatWidget({
             
             // If handoff flags are cleared in session metadata, restore handoff button
             if (!hasActiveHandoff && handoffRequested) {
-              console.log('Session handoff cleared via metadata update, restoring handoff button');
+              console.log('🔄 Session handoff cleared via metadata update, restoring handoff button');
               setHandoffRequested(false);
+              
+              // Also check for recent handback message as a fallback
+              // This ensures UI is updated even if message subscription is delayed
+              const checkForHandbackMessage = async () => {
+                try {
+                  const { data: recentMessages } = await supabaseRef.current!
+                    .from('chat_messages')
+                    .select('*')
+                    .eq('session_id', sessionId)
+                    .eq('role', 'assistant')
+                    .order('created_at', { ascending: false })
+                    .limit(3);
+                  
+                  const handbackMessage = recentMessages?.find(msg => 
+                    msg.metadata?.handback_to_bot === true
+                  );
+                  
+                  if (handbackMessage) {
+                    console.log('📥 Found recent handback message, adding to UI');
+                    setMessages(prev => {
+                      // Check if message already exists in current state
+                      if (prev.some(existingMsg => existingMsg.id === handbackMessage.id)) {
+                        console.log('Handback message already in state, skipping');
+                        return prev;
+                      }
+                      
+                      return [...prev, {
+                        id: handbackMessage.id,
+                        role: handbackMessage.role,
+                        content: handbackMessage.content,
+                        timestamp: handbackMessage.created_at,
+                        metadata: { ...handbackMessage.metadata, source: 'fallback-fetch' }
+                      }];
+                    });
+                  }
+                } catch (error) {
+                  console.warn('Error checking for handback message:', error);
+                }
+              };
+              
+              // Check for handback message after a short delay
+              setTimeout(checkForHandbackMessage, 500);
             }
           }
         }
       )
       .subscribe((status) => {
         console.log('Session subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Successfully subscribed to session updates for:', sessionId);
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('❌ Session subscription error for:', sessionId);
+        }
       });
 
     return () => {
@@ -619,7 +705,13 @@ export function ChatWidget({
         
         // Clear and re-populate processed set with current message IDs
         processedIdsRef.current.clear()
-        messagesResult.data.forEach(msg => processedIdsRef.current.add(msg.id))
+        recentMessagesRef.current.clear() // Also clear recent message tracking
+        messagesResult.data.forEach(msg => {
+          processedIdsRef.current.add(msg.id)
+          // Add existing messages to recent tracking to prevent duplicates
+          const messageKey = `${msg.role}:${msg.content.trim()}`;
+          recentMessagesRef.current.set(messageKey, new Date(msg.created_at).getTime());
+        })
         
         // Mark welcome as shown since we have existing messages
         welcomeShownRef.current = true
@@ -635,7 +727,12 @@ export function ChatWidget({
         }])
         // Clear and set only welcome message ID
         processedIdsRef.current.clear()
+        recentMessagesRef.current.clear() // Also clear recent message tracking
         processedIdsRef.current.add(welcomeId)
+        
+        // Track welcome message content
+        const messageKey = `assistant:${welcomeMessage.trim()}`;
+        recentMessagesRef.current.set(messageKey, Date.now());
         welcomeShownRef.current = true
       }
     } catch (err) {
@@ -785,31 +882,43 @@ export function ChatWidget({
       // Save user message to database and get the real ID
       const messageId = await saveMessage('user', userMessage)
       
-      // Send to n8n workflow
+      // If handoff is requested, only save the message for support agents - do NOT send to n8n
+      if (handoffRequested) {
+        console.log('Handoff requested - message saved for support agent only, not sending to n8n')
+        setIsLoading(false)
+        return
+      }
+      
+      // Send to n8n workflow only if no handoff is active
       const n8nResponse = await sendToN8n(userMessage)
       
-      // If we get a response, add it immediately if not already added via realtime
-      if (n8nResponse?.response) {
-        console.log('Got immediate response from n8n:', n8nResponse.response)
+      // If we get a response, add the message ID to processed set but DON'T add to UI
+      // Let the realtime subscription handle adding the message to avoid duplicates
+      if (n8nResponse?.response && n8nResponse.messageId) {
+        console.log('Got immediate response from n8n, marking as processed:', n8nResponse.messageId)
+        processedIdsRef.current.add(n8nResponse.messageId)
         
-        // Get the message ID if available from the response
-        const assistantId = n8nResponse.messageId || `assistant_${Date.now()}`
+        // Set a timeout to stop loading if realtime doesn't pick it up
+        setTimeout(() => {
+          setIsLoading(false)
+        }, 3000) // 3 second timeout for realtime
+      } else if (n8nResponse?.response && !n8nResponse.messageId) {
+        // Fallback: If no messageId, add directly but with unique ID
+        console.log('No messageId from n8n, adding response directly')
+        const assistantId = `assistant_fallback_${Date.now()}`
+        processedIdsRef.current.add(assistantId)
         
-        // Only add if not already processed (could have come in via realtime)
-        if (!processedIdsRef.current.has(assistantId)) {
-          processedIdsRef.current.add(assistantId)
-          
-          setMessages(prev => [...prev, {
-            id: assistantId,
-            role: 'assistant',
-            content: n8nResponse.response,
-            timestamp: new Date().toISOString(),
-            metadata: { source: 'n8n_direct' }
-          }])
-        } else {
-          console.log('Message already processed, not adding duplicate:', assistantId)
-        }
+        // Track content to prevent duplicates
+        const messageKey = `assistant:${n8nResponse.response.trim()}`;
+        recentMessagesRef.current.set(messageKey, Date.now());
         
+        setMessages(prev => [...prev, {
+          id: assistantId,
+          role: 'assistant',
+          content: n8nResponse.response,
+          timestamp: new Date().toISOString(),
+          metadata: { source: 'n8n_fallback' }
+        }])
         setIsLoading(false)
       } else {
         // If no immediate response, wait for real-time or timeout
@@ -823,17 +932,25 @@ export function ChatWidget({
       setError('Failed to send message. Please try again.')
       setIsLoading(false)
       
-      // Add error message to UI
-      const errorId = `error_${Date.now()}`
-      setMessages(prev => [...prev, {
-        id: errorId,
-        role: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again.',
-        timestamp: new Date().toISOString(),
-        metadata: { error: true }
-      }])
+      // Add error message to UI only if not in handoff mode
+      if (!handoffRequested) {
+        const errorId = `error_${Date.now()}`
+        const errorContent = 'Sorry, I encountered an error. Please try again.';
+        
+        // Track error message content
+        const messageKey = `assistant:${errorContent}`;
+        recentMessagesRef.current.set(messageKey, Date.now());
+        
+        setMessages(prev => [...prev, {
+          id: errorId,
+          role: 'assistant',
+          content: errorContent,
+          timestamp: new Date().toISOString(),
+          metadata: { error: true }
+        }])
+      }
     }
-  }, [inputMessage, isLoading, sessionId, saveMessage, sendToN8n, checkChatbotStatus])
+  }, [inputMessage, isLoading, sessionId, saveMessage, sendToN8n, checkChatbotStatus, handoffRequested])
 
   /* ────────────── handle handoff request ────────────── */
   const handleRequestHandoff = useCallback(async (reason?: string) => {
@@ -921,6 +1038,14 @@ export function ChatWidget({
     }
   }, [sessionId, handoffRequested, saveMessage, n8nWebhookUrl, chatbotId, userIdentifier])
 
+  /* ────────────── handle close widget ────────────── */
+  const handleCloseWidget = useCallback(() => {
+    setIsOpen(false)
+    // Clear message tracking when widget closes to prevent stale data
+    recentMessagesRef.current.clear()
+    console.log('Widget closed, cleared recent message tracking')
+  }, [])
+
   /* ────────────── handle key press ────────────── */
   const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -989,7 +1114,7 @@ export function ChatWidget({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setIsOpen(false)}
+                onClick={handleCloseWidget}
                 className="hover:bg-white/20 p-2 h-8 w-8"
                 title="Close"
               >
@@ -1098,8 +1223,11 @@ export function ChatWidget({
                     <div className="flex items-center gap-2 text-amber-800">
                       <UserPlus size={16} />
                       <span className="text-sm font-medium">
-                        Support request sent. A human agent will join soon.
+                        Connected to support. You're now chatting with a human agent.
                       </span>
+                    </div>
+                    <div className="text-xs text-amber-600 mt-1">
+                      Your messages will be seen by our support team, not the AI bot.
                     </div>
                   </div>
                 )}
@@ -1112,7 +1240,7 @@ export function ChatWidget({
                       value={inputMessage}
                       onChange={(e) => setInputMessage(e.target.value)}
                       onKeyDown={handleKeyPress}
-                      placeholder="Type your message..."
+                      placeholder={handoffRequested ? "Message support agent..." : "Type your message..."}
                       disabled={isLoading || !sessionId}
                       className={cn(
                         "border-slate-200 rounded-2xl h-12",
